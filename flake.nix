@@ -23,11 +23,13 @@
     system = "x86_64-linux"; # Containers must be built for Linux
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
-    ## Create a custom etc/doas.conf file for the container
-    #doasConf = pkgs.writeTextDir "etc/doas.conf" ''
-    #  permit nopass :wheel
-    #  permit keepenv :wheel
-    #'';
+    # Create a custom etc/oe-release file for the yx environment:
+    osRelease = pkgs.writeTextDir "etc/os-release" ''
+      PRETTY_NAME="Why-Ex Environment"
+      NAME="yx-env"
+      ID="yxenv"
+      VERSION_ID="0.0.1"
+    '';
     fakeSudo = pkgs.writeScriptBin "sudo" ''
     #!/bin/sh
     exec "$@"
@@ -48,11 +50,11 @@
       exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
     '';
 
-    sharedPkgs = import ./packages.nix { inherit pkgs; } ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) ];
+    sharedPkgs = import ./packages.nix { inherit pkgs; } ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease ];
 
     # Example: Creating a basic FHS shell
     fhs = pkgs.buildFHSEnv {
-      name = "my-fhs-env";
+      name = "yx-env-fhs";
       targetPkgs = pkgs: sharedPkgs ++ [
         # 1. Create a Python environment that includes the missing module
         (pkgs.python3.withPackages (ps: with ps; [
@@ -75,7 +77,7 @@
 
     # 1. Define the "FHS-like" environment
     fhsLayout = pkgs.buildEnv {
-      name = "fhs-root-layout";
+      name = "yx-env-root-layout";
       # List all packages you want in the standard paths
       paths = sharedPkgs;
       # 2. Tell Nix which folders to symlink to the root
