@@ -27,7 +27,6 @@
   file
   findutils
   gawk
-  gcc
   git
   # Make glibc high priority so its zdump wins over tzdata's version:
   (lib.hiPrio glibc)
@@ -44,6 +43,7 @@
   iproute2
   less
   libtinfo
+  libxcrypt
   locale
   patch
   perl

@@ -23,6 +23,14 @@
     system = "x86_64-linux"; # Containers must be built for Linux
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
+
+    yxInit = pkgs.writeScriptBin "yx-init" ''
+      #!/usr/bin/env bash
+      echo "[yx-env] Re-generating ld.so.cache..."
+      ldconfig -f /etc/ld.so.conf -C /tmp/yx-env-ld.so.cache
+      exec "$@"
+    '';
+
     # Create a custom etc/oe-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
       PRETTY_NAME="Why-Ex Environment"
@@ -30,13 +38,15 @@
       ID="yxenv"
       VERSION_ID="0.0.1"
     '';
+
     fakeSudo = pkgs.writeScriptBin "sudo" ''
-    #!/bin/sh
-    exec "$@"
+      #!/bin/sh
+      exec "$@"
     '';
+
     lz4C = pkgs.writeScriptBin "lz4c" ''
-    #!/bin/sh
-    exec "lz4 $@"
+      #!/bin/sh
+      exec "lz4 $@"
     '';
 
     # This wrapper fixes the "one giant filename" issue
@@ -50,85 +60,151 @@
       exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
     '';
 
-    sharedPkgs = import ./packages.nix { inherit pkgs; } ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease ];
+    yxCommonPkgs = import ./packages.nix { inherit pkgs; };
 
-    # Example: Creating a basic FHS shell
-    fhs = pkgs.buildFHSEnv {
-      name = "yx-env-fhs";
-      targetPkgs = pkgs: sharedPkgs ++ [
-        # 1. Create a Python environment that includes the missing module
+    yxGenFlags = pkg: ''
+      if [ -d ${pkg}/include ]; then
+        echo -I${pkg}/include >> $out/nix-support/cc-cflags
+      fi
+      if [ -d ${pkg}/lib ]; then
+        echo -L${pkg}/lib >> $out/nix-support/cc-ldflags
+      fi
+    '';
+
+    # Extract lib directories automatically
+    yxLibDirs = lib.flatten (map (p:
+      let libPath = "${p}/lib";
+      in if builtins.pathExists libPath then [ libPath ] else []
+    ) yxCommonPkgs);
+
+    yxAllCCFlags = builtins.concatStringsSep "\n" (map yxGenFlags yxCommonPkgs);
+
+    yxCC = pkgs.wrapCCWith {
+      cc = pkgs.stdenv.cc.cc;
+      bintools = pkgs.binutils;
+      libc = pkgs.glibc;
+      extraBuildCommands = ''
+        mkdir -p $out/lib
+        ${yxAllCCFlags}
+        #echo "-lcrypt" >> $out/nix-support/cc-ldflags
+      '';
+    };
+
+    yxAllPkgs = yxCommonPkgs ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit yxCC ];
+
+    # Creating a FHS shell
+    yxFHSEnv = pkgs.buildFHSEnv {
+      name = "yx-fhs-env";
+      targetPkgs = pkgs: yxAllPkgs ++ [
+        # Create a Python environment that includes the missing module
         (pkgs.python3.withPackages (ps: with ps; [
           argcomplete
           # add other modules here
-        ]))
+       ]))
       ];
 
-      # 2. This script runs when the shell (or nix develop) starts
+      # This script runs when the shell (or nix develop) starts
       profile = ''
-        export TZDIR=/share/zoneinfo
         export LANG=en_US.UTF-8
-        export LANGUAGE=en_US:en
         export LC_ALL=en_US.UTF-8
-        export LOCALE_ARCHIVE=/lib/locale/locale-archive
-        export BB_ENV_PASSTHROUGH_ADDITIONS="\$BB_ENV_PASSTHROUGH_ADDITIONS LOCALE_ARCHIVE"
       '';
 
       runScript = "bash";
     };
 
-    # 1. Define the "FHS-like" environment
-    fhsLayout = pkgs.buildEnv {
+    # Define the "FHS-like" environment
+    yxEnvBase = pkgs.buildEnv {
       name = "yx-env-root-layout";
       # List all packages you want in the standard paths
-      paths = sharedPkgs;
-      # 2. Tell Nix which folders to symlink to the root
-      pathsToLink = [ "/bin" "/etc" "/include" "/lib" "/share" "/usr" "/var" ];
+      paths = yxAllPkgs;
+
       # Either package priority or this (see glibc.dev in packages.nix)
       #ignoreCollisions = true;
     };
 
-    # Create a wrapper that moves /include to /usr/include
-    usrInclude = pkgs.runCommand "usr-include" {} ''
-      mkdir -p $out/usr
-      ln -s ${fhsLayout}/include $out/usr/include
+    yxEnv = pkgs.runCommand "yx-env-sysroot" {
+      #nativeBuildInputs = [ pkgs.breakpointHook ];
+    } ''
+      set -x
+      mkdir -p $out
+
+      # Copy base environment
+      cp -r ${yxEnvBase}/* $out/
+
+      echo "Setting up FHS sysroot..."
+      # ---- Create FHS structure ----
+      mkdir -p $out/usr/include
+      mkdir -p $out/usr/lib
+      mkdir -p $out/usr/bin
+
+      # ---- Headers ----
+      ln -sf ${pkgs.glibc.dev}/include/* $out/usr/include/
+
+      # ---- Locale archive (CRITICAL) ----
+      rm -rf $out/usr/lib/locale
+      mkdir -p $out/usr/lib/locale
+      ln -sf ${pkgs.glibc}/lib/locale/* $out/usr/lib/locale/
+      ln -sf ${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive \
+         $out/usr/lib/locale/
+
+      # ---- ld.so.cache ----
+      chmod 777 $out/etc
+      # provide linker config
+      cat > $out/etc/ld.so.conf <<EOF
+/usr/lib
+/lib
+EOF
+cat $out/etc/ld.so.conf
+      ln -sf /tmp/yx-env-ld.so.cache $out/etc/ld.so.cache
+      chmod 555 $out/etc
+
+      echo "[yx-env] Populating /usr/lib from container closure..."
+
+      # Symlink all shared libraries
+      for libdir in ${lib.concatStringsSep " " yxLibDirs}; do
+        if [ -d "$libdir" ]; then
+          for f in $libdir/*.so*; do
+            [ -e "$f" ] || continue
+            ln -sf "$f" $out/usr/lib/
+          done
+        fi
+      done
+
+      # ---- Binaries ----
+      cp -pP $out/bin/* $out/usr/bin/
     '';
 
   in {
     # Creating a FHSEnv shell
-    devShells.${system}.default = fhs.env;
+    devShells.${system}.default = yxFHSEnv.env;
 
-    packages.${system}.container = pkgs.dockerTools.buildImage {
-      name = "yx-env";
-      tag = "latest";
-      # This (now) breaks reproducibility:
-      #created = "now";
-      # Contents to include in the image root
-      # 3. Drop the symlinked tree into the container root
-      copyToRoot = [
-        fhsLayout
-        usrInclude  # Provides /usr/include -> /bin/include
-        pkgs.dockerTools.binSh
-        pkgs.dockerTools.usrBinEnv
-        pkgs.dockerTools.caCertificates
-        pkgs.dockerTools.fakeNss
-      ];
+    packages.${system} = {
+      yxEnv = yxEnv;
 
-      config = {
-        Cmd = [ "/bin/bash" ];
-        Env = [
-          "TZDIR=/share/zoneinfo"
-          "LANG=en_US.UTF-8"
-          "LANGUAGE=en_US:en"
-          "LC_ALL=en_US.UTF-8"
-          # Point to the locale archive generated by glibcLocales
-          "LOCALE_ARCHIVE=/lib/locale/locale-archive"
-          "BB_ENV_PASSTHROUGH_ADDITIONS=$BB_ENV_PASSTHROUGH_ADDITIONS LOCALE_ARCHIVE"
-          # 4. Standard Linux paths so the container knows where to look
-          "LD_LIBRARY_PATH=/lib:/usr/lib"
-          "PATH=/bin:/usr/bin"
+      container = pkgs.dockerTools.buildImage {
+        name = "yx-env";
+        tag = "latest";
+        # This (now) breaks reproducibility:
+        #created = "now";
+
+        # Contents to include in the image root
+        copyToRoot = [
+          yxEnv
+          pkgs.dockerTools.binSh
+          pkgs.dockerTools.usrBinEnv
+          pkgs.dockerTools.caCertificates
+          pkgs.dockerTools.fakeNss
         ];
+
+        config = {
+          Entrypoint = [ "/bin/yx-init" ];
+          Cmd = [ "bash" ];
+          Env = [
+            "LANG=en_US.UTF-8"
+            "LC_ALL=en_US.UTF-8"
+          ];
+        };
       };
     };
   };
 }
-
