@@ -21,6 +21,15 @@
 
   outputs = { self, nixpkgs }: let
     system = "x86_64-linux"; # Containers must be built for Linux
+    config = {
+      # Disable docs/manpages globally
+      documentation = {
+        enable = false;
+        doc = false;
+        info = false;
+        man = false;
+      };
+    };
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
@@ -195,6 +204,11 @@ cat $out/etc/ld.so.conf
           pkgs.dockerTools.caCertificates
           pkgs.dockerTools.fakeNss
         ];
+
+        extraCommands = ''
+          # Optional: remove leftover docs
+          rm -rf $out/share/{man,doc,info}
+        '';
 
         config = {
           Entrypoint = [ "/bin/yx-init" ];
