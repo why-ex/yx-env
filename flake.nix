@@ -71,22 +71,19 @@
 
     yxCommonPkgs = import ./packages.nix { inherit pkgs; };
 
-    yxGenFlags = pkg: ''
-      if [ -d ${pkg}/include ]; then
-        echo -I${pkg}/include >> $out/nix-support/cc-cflags
-      fi
-      if [ -d ${pkg}/lib ]; then
-        echo -L${pkg}/lib >> $out/nix-support/cc-ldflags
-      fi
-    '';
-
     # Extract lib directories automatically
     yxLibDirs = lib.flatten (map (p:
       let libPath = "${p}/lib";
       in if builtins.pathExists libPath then [ libPath ] else []
     ) yxCommonPkgs);
 
-    yxAllCCFlags = builtins.concatStringsSep "\n" (map yxGenFlags yxCommonPkgs);
+    yxGenLDFlags = pkg: ''
+      if [ -d ${pkg}/lib ]; then
+        echo -L${pkg}/lib >> $out/nix-support/cc-ldflags
+      fi
+    '';
+
+    yxAllLDFlags = builtins.concatStringsSep "\n" (map yxGenLDFlags yxCommonPkgs);
 
     yxCC = pkgs.wrapCCWith {
       cc = pkgs.stdenv.cc.cc;
@@ -94,7 +91,7 @@
       libc = pkgs.glibc;
       extraBuildCommands = ''
         mkdir -p $out/lib
-        ${yxAllCCFlags}
+        ${yxAllLDFlags}
         #echo "-lcrypt" >> $out/nix-support/cc-ldflags
       '';
     };
@@ -168,7 +165,6 @@ cat $out/etc/ld.so.conf
       chmod 555 $out/etc
 
       echo "[yx-env] Populating /usr/lib from container closure..."
-
       # Symlink all shared libraries
       for libdir in ${lib.concatStringsSep " " yxLibDirs}; do
         if [ -d "$libdir" ]; then
