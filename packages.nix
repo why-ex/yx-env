@@ -45,6 +45,7 @@
   libtinfo
   libxcrypt
   locale
+  nix-ld
   patch
   perl
   python3

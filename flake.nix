@@ -159,6 +159,7 @@
       cat > $out/etc/ld.so.conf <<EOF
 /usr/lib
 /lib
+/lib64
 EOF
 cat $out/etc/ld.so.conf
       ln -sf /tmp/yx-env-ld.so.cache $out/etc/ld.so.cache
@@ -174,6 +175,11 @@ cat $out/etc/ld.so.conf
           done
         fi
       done
+      mkdir -p $out/lib64
+      ln -sf ${pkgs.nix-ld}/libexec/nix-ld $out/lib64/ld-linux-x86-64.so.2
+      mkdir -p $out/run/current-system/sw/share/nix-ld/lib
+      ln -sf ${pkgs.glibc.bin}/bin/ld.so $out/run/current-system/sw/share/nix-ld/lib/
+      ln -sf ${pkgs.zlib}/lib/*.so* $out/run/current-system/sw/share/nix-ld/lib/
 
       # ---- Binaries ----
       cp -pP $out/bin/* $out/usr/bin/
