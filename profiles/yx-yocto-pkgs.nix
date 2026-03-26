@@ -13,12 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-# packages.nix
-# Core nix packages for the yocto build environment.
+# yx-yocto-pkgs.nix
+# Extra nix packages for the yocto build environment.
 { pkgs }: with pkgs; [
   bashInteractive
   bzip2
-  hello
   chrpath
   coreutils
   cpio
@@ -28,11 +27,6 @@
   findutils
   gawk
   git
-  # Make glibc high priority so its zdump wins over tzdata's version:
-  (lib.hiPrio glibc)
-  (lib.hiPrio glibc.bin)
-  (lib.hiPrio glibc.dev) # glibc wins the conflict
-  glibcLocalesUtf8
   gnugrep
   gnulib
   gnumake
@@ -43,9 +37,6 @@
   iproute2
   less
   libtinfo
-  libxcrypt
-  locale
-  nix-ld
   patch
   perl
   python3
@@ -59,6 +50,5 @@
   wget
   which
   xz
-  zlib
   zstd
 ]

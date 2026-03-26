@@ -33,13 +33,15 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
+    # Yocto specifc:
     yxInit = pkgs.writeScriptBin "yx-init" ''
       #!/usr/bin/env bash
-      echo "[yx-env] Re-generating ld.so.cache..."
-      ldconfig -f /etc/ld.so.conf -C /tmp/yx-env-ld.so.cache
+      echo "[yx-env] Running fhs-init..."
+      /bin/fhs-init
       exec "$@"
     '';
 
+    # Yocto specifc:
     # Create a custom etc/oe-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
       PRETTY_NAME="Why-Ex Environment"
@@ -48,16 +50,19 @@
       VERSION_ID="0.0.1"
     '';
 
+    # Yocto specifc:
     fakeSudo = pkgs.writeScriptBin "sudo" ''
       #!/bin/sh
       exec "$@"
     '';
 
+    # Yocto specifc:
     lz4C = pkgs.writeScriptBin "lz4c" ''
       #!/bin/sh
       exec "lz4 $@"
     '';
 
+    # Yocto specifc:
     # This wrapper fixes the "one giant filename" issue
     rpcgen-wrapper = pkgs.writeShellScriptBin "rpcgen" ''
       # CPP often looks like "gcc -E --sysroot=..."
@@ -69,45 +74,19 @@
       exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
     '';
 
-    yxCommonPkgs = import ./packages.nix { inherit pkgs; };
+    yxCommonPkgs = import ./profiles/yx-yocto-pkgs.nix { inherit pkgs; };
 
-    # Extract lib directories automatically
-    yxLibDirs = lib.flatten (map (p:
-      let libPath = "${p}/lib";
-      in if builtins.pathExists libPath then [ libPath ] else []
-    ) yxCommonPkgs);
+    yxAllPkgs = yxCommonPkgs ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit ];
 
-    yxGenLDFlags = pkg: ''
-      if [ -d ${pkg}/lib ]; then
-        echo -L${pkg}/lib >> $out/nix-support/cc-ldflags
-      fi
-    '';
-
-    yxAllLDFlags = builtins.concatStringsSep "\n" (map yxGenLDFlags yxCommonPkgs);
-
-    yxCC = pkgs.wrapCCWith {
-      cc = pkgs.stdenv.cc.cc;
-      bintools = pkgs.binutils;
-      libc = pkgs.glibc;
-      extraBuildCommands = ''
-        mkdir -p $out/lib
-        ${yxAllLDFlags}
-        #echo "-lcrypt" >> $out/nix-support/cc-ldflags
-      '';
+    fhs = import ./lib/fhs-compat.nix {
+      inherit pkgs;
+      extraPkgs = yxAllPkgs;
     };
-
-    yxAllPkgs = yxCommonPkgs ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit yxCC ];
 
     # Creating a FHS shell
     yxFHSEnv = pkgs.buildFHSEnv {
-      name = "yx-fhs-env";
-      targetPkgs = pkgs: yxAllPkgs ++ [
-        # Create a Python environment that includes the missing module
-        (pkgs.python3.withPackages (ps: with ps; [
-          argcomplete
-          # add other modules here
-       ]))
-      ];
+      name = "yx-env";
+      targetPkgs = pkgs: fhs.allPkgs;
 
       # This script runs when the shell (or nix develop) starts
       profile = ''
@@ -118,80 +97,11 @@
       runScript = "bash";
     };
 
-    # Define the "FHS-like" environment
-    yxEnvBase = pkgs.buildEnv {
-      name = "yx-env-root-layout";
-      # List all packages you want in the standard paths
-      paths = yxAllPkgs;
-
-      # Either package priority or this (see glibc.dev in packages.nix)
-      #ignoreCollisions = true;
-    };
-
-    yxEnv = pkgs.runCommand "yx-env-sysroot" {
-      #nativeBuildInputs = [ pkgs.breakpointHook ];
-    } ''
-      set -x
-      mkdir -p $out
-
-      # Copy base environment
-      cp -r ${yxEnvBase}/* $out/
-
-      echo "Setting up FHS sysroot..."
-      # ---- Create FHS structure ----
-      mkdir -p $out/usr/include
-      mkdir -p $out/usr/lib
-      mkdir -p $out/usr/bin
-
-      # ---- Headers ----
-      ln -sf ${pkgs.glibc.dev}/include/* $out/usr/include/
-
-      # ---- Locale archive (CRITICAL) ----
-      rm -rf $out/usr/lib/locale
-      mkdir -p $out/usr/lib/locale
-      ln -sf ${pkgs.glibc}/lib/locale/* $out/usr/lib/locale/
-      ln -sf ${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive \
-         $out/usr/lib/locale/
-
-      # ---- ld.so.cache ----
-      chmod 777 $out/etc
-      # provide linker config
-      cat > $out/etc/ld.so.conf <<EOF
-/usr/lib
-/lib
-/lib64
-EOF
-cat $out/etc/ld.so.conf
-      ln -sf /tmp/yx-env-ld.so.cache $out/etc/ld.so.cache
-      chmod 555 $out/etc
-
-      echo "[yx-env] Populating /usr/lib from container closure..."
-      # Symlink all shared libraries
-      for libdir in ${lib.concatStringsSep " " yxLibDirs}; do
-        if [ -d "$libdir" ]; then
-          for f in $libdir/*.so*; do
-            [ -e "$f" ] || continue
-            ln -sf "$f" $out/usr/lib/
-          done
-        fi
-      done
-      mkdir -p $out/lib64
-      ln -sf ${pkgs.nix-ld}/libexec/nix-ld $out/lib64/ld-linux-x86-64.so.2
-      mkdir -p $out/run/current-system/sw/share/nix-ld/lib
-      ln -sf ${pkgs.glibc.bin}/bin/ld.so $out/run/current-system/sw/share/nix-ld/lib/
-      ln -sf ${pkgs.zlib}/lib/*.so* $out/run/current-system/sw/share/nix-ld/lib/
-
-      # ---- Binaries ----
-      cp -pP $out/bin/* $out/usr/bin/
-    '';
-
   in {
     # Creating a FHSEnv shell
     devShells.${system}.default = yxFHSEnv.env;
 
     packages.${system} = {
-      yxEnv = yxEnv;
-
       container = pkgs.dockerTools.buildImage {
         name = "yx-env";
         tag = "latest";
@@ -200,7 +110,8 @@ cat $out/etc/ld.so.conf
 
         # Contents to include in the image root
         copyToRoot = [
-          yxEnv
+          #yxEnv
+          fhs.packages
           pkgs.dockerTools.binSh
           pkgs.dockerTools.usrBinEnv
           pkgs.dockerTools.caCertificates
