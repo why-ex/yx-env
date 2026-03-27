@@ -83,6 +83,7 @@
       extraPkgs = yxAllPkgs;
     };
 
+    enableToolchain = true;
     toolchain = import ./lib/yx-toolchain.nix {
       inherit pkgs;
       inputPkgs = yxAllPkgs;
@@ -91,7 +92,10 @@
     # Creating a FHS shell
     yxFHSEnv = pkgs.buildFHSEnv {
       name = "yx-env";
-      targetPkgs = pkgs: fhs.allPkgs ++ [ fhs.init toolchain.cc ];
+      targetPkgs = pkgs:
+        fhs.allPkgs
+        ++ [ fhs.init ]
+        ++ pkgs.lib.optional enableToolchain toolchain.cc;
 
       # This script runs when the shell (or nix develop) starts
       profile = ''
@@ -115,19 +119,14 @@
 
         # Contents to include in the image root
         copyToRoot = [
-          fhs.packages
+          fhs.rootfs
           fhs.init
-          toolchain.cc
           pkgs.dockerTools.binSh
           pkgs.dockerTools.usrBinEnv
           pkgs.dockerTools.caCertificates
           pkgs.dockerTools.fakeNss
-        ];
-
-        extraCommands = ''
-          # Optional: remove leftover docs
-          rm -rf $out/share/{man,doc,info}
-        '';
+        ]
+        ++ pkgs.lib.optional enableToolchain toolchain.cc;
 
         config = {
           Entrypoint = [ "/bin/yx-init" ];

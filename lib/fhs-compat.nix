@@ -22,6 +22,10 @@
 let
   lib = pkgs.lib;
 
+  # Canonical dynamic linker (always correct for stdenv)
+  dynamicLinker =
+    lib.fileContents "${pkgs.stdenv.cc}/nix-support/dynamic-linker";
+
   # --- Base packages required for FHS compatibility ---
   basePkgs = [
     #pkgs.stdenv.cc.cc #!!!Do not enable - breaks things!!!
@@ -39,6 +43,26 @@ let
 
   allPkgs = basePkgs ++ extraPkgs;
 
+  # --- Collect all lib directories dynamically ---
+  libDirs = lib.flatten (map (p:
+    let d = "${p}/lib";
+    in if builtins.pathExists d then [ d ] else []
+  ) allPkgs);
+
+  # --- Script to populate a directory with .so symlinks ---
+  linkLibs = target: ''
+    mkdir -p ${target}
+    for libdir in ${lib.concatStringsSep " " libDirs}; do
+      if [ -d "$libdir" ]; then
+        for f in $libdir/*.so*; do
+          [ -e "$f" ] || continue
+          ln -sf "$f" ${target}/
+        done
+      fi
+    done
+  '';
+
+  # --- Runtime init (for ld cache) ---
   fhsInit = pkgs.writeScriptBin "fhs-init" ''
     #!/bin/sh
     set -e
@@ -50,14 +74,8 @@ let
     ldconfig -f /etc/ld.so.conf -C "$CACHE"
   '';
 
-  # Extract lib directories automatically
-  fhsLibDirs = lib.flatten (map (p:
-    let libPath = "${p}/lib";
-    in if builtins.pathExists libPath then [ libPath ] else []
-  ) allPkgs);
-
-  # Define the "FHS-like" environment
-  fhsEnvBase = pkgs.buildEnv {
+  # --- Define the "FHS-like" environment ---
+  envBase = pkgs.buildEnv {
     name = "fhs-env-base";
     # List all packages you want in the standard paths
     paths = allPkgs;
@@ -70,15 +88,15 @@ let
   # Packages usable in buildFHSEnv
   inherit allPkgs;
 
-  packages = pkgs.runCommand "fhs-env" {
-    #nativeBuildInputs = [ pkgs.breakpointHook ];
-  } ''
-    echo "Setting up FHS sysroot..."
+  # Full filesystem tree (for containers)
+  rootfs = pkgs.runCommand "fhs-env-rootfs" {} ''
+    echo "[fhs-rootfs] Setting up FHS sysroot..."
+    set -e
     set -x
     mkdir -p $out
 
-    # Copy base environment
-    cp -r ${fhsEnvBase}/* $out/
+    echo "[fhs-rootfs] Copying base environment..."
+    cp -r ${envBase}/* $out/
 
     # ---- Create FHS structure ----
     mkdir -p $out/usr/include
@@ -95,36 +113,42 @@ let
     ln -sf ${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive \
        $out/usr/lib/locale/
 
+    # --- Populate /usr/lib ---
+    echo "[fhs-rootfs] Populating /usr/lib..."
+    ${linkLibs "$out/usr/lib"}
+
+    # --- Cleanup-populate /lib ---
+    echo "[fhs-rootfs] Cleanup-populate /lib..."
+    chmod 777 $out/lib
+    rm -f $out/lib/*[ch]
+    ${linkLibs "$out/lib"}
+    chmod 555 $out/lib
+
     # ---- ld.so.cache ----
     chmod 777 $out/etc
+    # provide symlink to runtime cache
+    ln -sf ${ldSoCachePath} $out/etc/ld.so.cache
     # provide linker config
     cat > $out/etc/ld.so.conf <<EOF
 /usr/lib
 /lib
 /lib64
 EOF
-cat $out/etc/ld.so.conf
-    ln -sf ${ldSoCachePath} $out/etc/ld.so.cache
     chmod 555 $out/etc
 
-    echo "[fhs-env] Populating /usr/lib from container closure..."
-    # Symlink all shared libraries
-    for libdir in ${lib.concatStringsSep " " fhsLibDirs}; do
-      if [ -d "$libdir" ]; then
-        for f in $libdir/*.so*; do
-          [ -e "$f" ] || continue
-          ln -sf "$f" $out/usr/lib/
-        done
-      fi
-    done
+    # --- Dynamic linker (critical) ---
     mkdir -p $out/lib64
     ln -sf ${pkgs.nix-ld}/libexec/nix-ld $out/lib64/ld-linux-x86-64.so.2
-    mkdir -p $out/run/current-system/sw/share/nix-ld/lib
-    ln -sf ${pkgs.glibc.bin}/bin/ld.so $out/run/current-system/sw/share/nix-ld/lib/
-    ln -sf ${pkgs.zlib}/lib/*.so* $out/run/current-system/sw/share/nix-ld/lib/
+
+    # --- nix-ld fallback library pool ---
+    mkdir -p $out${libDir}
+    ln -sf ${pkgs.glibc.bin}/bin/ld.so $out${libDir}/
+    ${linkLibs "$out${libDir}"}
 
     # ---- Binaries ----
     cp -pP $out/bin/* $out/usr/bin/
+
+    echo "[fhs-rootfs] Rootfs ready"
   '';
 
   # Runtime helper (to include into final environment)
@@ -132,7 +156,8 @@ cat $out/etc/ld.so.conf
 
   # Metadata (useful for debugging / versioning)
   meta = {
-    inherit ldSoCachePath libDir;
+    inherit dynamicLinker ldSoCachePath libDir;
     pkgs = allPkgs;
+    libDirs = libDirs;
   };
 }
