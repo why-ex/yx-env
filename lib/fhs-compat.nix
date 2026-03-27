@@ -15,6 +15,7 @@
 */
 { pkgs
 , extraPkgs ? []
+, ldSoCachePath ? "/tmp/fhs-env-ld.so.cache"
 }:
 
 let
@@ -37,9 +38,14 @@ let
   fhsCommonPkgs = fhsBasePkgs ++ extraPkgs;
 
   fhsInit = pkgs.writeScriptBin "fhs-init" ''
-    #!/bin/bash
-    echo "[fhs-init] Re-generating ld.so.cache..."
-    ldconfig -f /etc/ld.so.conf -C /tmp/fhs-env-ld.so.cache
+    #!/bin/sh
+    set -e
+    CACHE=${ldSoCachePath}
+    echo "[fhs-init] Generating ld.so.cache at $CACHE"
+    # Ensure directory exists
+    mkdir -p "$(dirname "$CACHE")"
+
+    ldconfig -f /etc/ld.so.conf -C "$CACHE"
   '';
 
   # Extract lib directories automatically
@@ -115,7 +121,7 @@ let
 /lib64
 EOF
 cat $out/etc/ld.so.conf
-    ln -sf /tmp/fhs-env-ld.so.cache $out/etc/ld.so.cache
+    ln -sf ${ldSoCachePath} $out/etc/ld.so.cache
     chmod 555 $out/etc
 
     echo "[fhs-env] Populating /usr/lib from container closure..."
