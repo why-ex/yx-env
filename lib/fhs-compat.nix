@@ -14,14 +14,16 @@
    limitations under the License.
 */
 { pkgs
-, extraPkgs ? []
+, extraPkgs ? []     # additional packages to include in environment
 , ldSoCachePath ? "/tmp/fhs-env-ld.so.cache"
+, libDir ? "/run/current-system/sw/share/nix-ld/lib"
 }:
 
 let
   lib = pkgs.lib;
 
-  fhsBasePkgs = [
+  # --- Base packages required for FHS compatibility ---
+  basePkgs = [
     #pkgs.stdenv.cc.cc #!!!Do not enable - breaks things!!!
     #pkgs.binutils #!!!Do not enable - breaks things!!!
     # Make glibc high priority so its zdump wins over tzdata's version:
@@ -35,7 +37,7 @@ let
     pkgs.zlib
   ];
 
-  fhsCommonPkgs = fhsBasePkgs ++ extraPkgs;
+  allPkgs = basePkgs ++ extraPkgs;
 
   fhsInit = pkgs.writeScriptBin "fhs-init" ''
     #!/bin/sh
@@ -52,41 +54,22 @@ let
   fhsLibDirs = lib.flatten (map (p:
     let libPath = "${p}/lib";
     in if builtins.pathExists libPath then [ libPath ] else []
-  ) fhsCommonPkgs);
-
-  fhsGenLDFlags = pkg: ''
-    if [ -d ${pkg}/lib ]; then
-      echo -L${pkg}/lib >> $out/nix-support/cc-ldflags
-    fi
-  '';
-
-  fhsAllLDFlags = builtins.concatStringsSep "\n" (map fhsGenLDFlags fhsCommonPkgs);
-
-  fhsCC = pkgs.wrapCCWith {
-    cc = pkgs.stdenv.cc.cc;
-    bintools = pkgs.binutils;
-    libc = pkgs.glibc;
-    extraBuildCommands = ''
-      mkdir -p $out/lib
-      ${fhsAllLDFlags}
-      #echo "-lcrypt" >> $out/nix-support/cc-ldflags
-    '';
-  };
-
-  fhsAllPkgs = fhsCommonPkgs ++ [ fhsInit fhsCC ];
+  ) allPkgs);
 
   # Define the "FHS-like" environment
   fhsEnvBase = pkgs.buildEnv {
     name = "fhs-env-base";
     # List all packages you want in the standard paths
-    paths = fhsAllPkgs;
+    paths = allPkgs;
 
     # Either package priority or this (see glibc.dev in packages.nix)
     #ignoreCollisions = true;
   };
 
  in {
-  allPkgs = fhsAllPkgs;
+  # Packages usable in buildFHSEnv
+  inherit allPkgs;
+
   packages = pkgs.runCommand "fhs-env" {
     #nativeBuildInputs = [ pkgs.breakpointHook ];
   } ''
@@ -143,4 +126,13 @@ cat $out/etc/ld.so.conf
     # ---- Binaries ----
     cp -pP $out/bin/* $out/usr/bin/
   '';
+
+  # Runtime helper (to include into final environment)
+  init = fhsInit;
+
+  # Metadata (useful for debugging / versioning)
+  meta = {
+    inherit ldSoCachePath libDir;
+    pkgs = allPkgs;
+  };
 }
