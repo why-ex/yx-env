@@ -15,7 +15,6 @@
 */
 { pkgs
 , extraPkgs ? []     # additional packages to include in environment
-, ldSoCachePath ? "/tmp/fhs-env-ld.so.cache"
 , libDir ? "/run/current-system/sw/share/nix-ld/lib"
 }:
 
@@ -66,12 +65,7 @@ let
   fhsInit = pkgs.writeScriptBin "fhs-init" ''
     #!/bin/sh
     set -e
-    CACHE=${ldSoCachePath}
-    echo "[fhs-init] Generating ld.so.cache at $CACHE"
-    # Ensure directory exists
-    mkdir -p "$(dirname "$CACHE")"
-
-    ldconfig -f /etc/ld.so.conf -C "$CACHE"
+    echo "[fhs-init] ..."
   '';
 
   # --- Define the "FHS-like" environment ---
@@ -124,18 +118,6 @@ let
     ${linkLibs "$out/lib"}
     chmod 555 $out/lib
 
-    # ---- ld.so.cache ----
-    chmod 777 $out/etc
-    # provide symlink to runtime cache
-    ln -sf ${ldSoCachePath} $out/etc/ld.so.cache
-    # provide linker config
-    cat > $out/etc/ld.so.conf <<EOF
-/usr/lib
-/lib
-/lib64
-EOF
-    chmod 555 $out/etc
-
     # --- Dynamic linker (critical) ---
     mkdir -p $out/lib64
     ln -sf ${pkgs.nix-ld}/libexec/nix-ld $out/lib64/ld-linux-x86-64.so.2
@@ -156,7 +138,7 @@ EOF
 
   # Metadata (useful for debugging / versioning)
   meta = {
-    inherit dynamicLinker ldSoCachePath libDir;
+    inherit dynamicLinker libDir;
     pkgs = allPkgs;
     libDirs = libDirs;
   };

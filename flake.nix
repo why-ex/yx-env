@@ -111,14 +111,14 @@
     devShells.${system}.default = yxFHSEnv.env;
 
     packages.${system} = {
-      container = pkgs.dockerTools.buildImage {
+      container = pkgs.dockerTools.buildLayeredImage {
         name = "yx-env";
         tag = "latest";
         # This (now) breaks reproducibility:
         #created = "now";
 
         # Contents to include in the image root
-        copyToRoot = [
+        contents = [
           fhs.rootfs
           fhs.init
           pkgs.dockerTools.binSh
@@ -127,6 +127,23 @@
           pkgs.dockerTools.fakeNss
         ]
         ++ pkgs.lib.optional enableToolchain toolchain.cc;
+
+        maxLayers = 2;
+        enableFakechroot = true;
+        fakeRootCommands = ''
+          #!${pkgs.runtimeShell}
+          ${pkgs.dockerTools.shadowSetup}
+          # Add custom commands here (privileged?):
+          # ---- ld.so.cache ----
+          # provide linker config
+          cat > /etc/ld.so.conf <<EOF
+/usr/lib
+/lib
+/lib64
+EOF
+          /bin/ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache
+          /bin/ldconfig -p -C /etc/ld.so.cache
+        '';
 
         config = {
           Entrypoint = [ "/bin/yx-init" ];
