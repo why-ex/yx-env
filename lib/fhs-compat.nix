@@ -34,11 +34,10 @@ let
     (lib.hiPrio pkgs.glibc.bin)
     (lib.hiPrio pkgs.glibc.dev) # glibc wins the conflict
     pkgs.glibcLocalesUtf8
-    pkgs.libxcrypt
     pkgs.locale
     pkgs.nix-ld
-    pkgs.zlib
-  ];
+  ]
+  ++ ( import ./lib-common-pkgs.nix { inherit pkgs; } );
 
   allPkgs = basePkgs ++ extraPkgs;
 

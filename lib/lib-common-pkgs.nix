@@ -13,32 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-{ pkgs
-, inputPkgs ? []
-}:
-
-let
-  lib = pkgs.lib;
-
-  allPkgs = inputPkgs ++ ( import ./lib-common-pkgs.nix { inherit pkgs; } );
-
-  # Collect lib paths
-  libDirs = lib.flatten (map (p:
-    let d = "${p}/lib";
-    in if builtins.pathExists d then [ d ] else []
-  ) allPkgs);
-
-  ldFlags = lib.concatMapStrings (d: "-L${d} ") libDirs;
-
-in {
-  cc = pkgs.wrapCCWith {
-    cc = pkgs.stdenv.cc.cc;
-    bintools = pkgs.binutils;
-    libc = pkgs.glibc;
-
-    extraBuildCommands = ''
-      mkdir -p $out/nix-support
-      echo "${ldFlags}" >> $out/nix-support/cc-ldflags
-    '';
-  };
-}
+# lib-common-pkgs.nix
+# Extra nix packages for the yocto build environment.
+{ pkgs }: with pkgs; [
+  libxcrypt
+  zlib
+]
