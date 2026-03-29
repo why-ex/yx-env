@@ -143,6 +143,8 @@
 EOF
           /bin/ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache
           /bin/ldconfig -p -C /etc/ld.so.cache
+          touch --reference=/etc/os-release /etc/ld.so.conf
+          touch --reference=/etc/os-release /etc/ld.so.cache
         '';
 
         config = {
