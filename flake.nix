@@ -137,9 +137,7 @@
           # ---- ld.so.cache ----
           # provide linker config
           ${pkgs.coreutils}/bin/cat > /etc/ld.so.conf <<EOF
-/usr/lib
-/lib
-/lib64
+${pkgs.lib.concatStringsSep "\n" fhs.libDirs}
 EOF
           ${pkgs.glibc.bin}/bin/ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache
           ${pkgs.glibc.bin}/bin/ldconfig -p -C /etc/ld.so.cache

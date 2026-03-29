@@ -81,6 +81,9 @@ let
   # Packages usable in buildFHSEnv
   inherit allPkgs;
 
+  # Library dirs, usable in /etc/ld.so.conf
+  inherit libDirs;
+
   # Full filesystem tree (for containers)
   rootfs = pkgs.runCommand "fhs-env-rootfs" {} ''
     echo "[fhs-rootfs] Setting up FHS sysroot..."
