@@ -39,7 +39,21 @@ let
   ]
   ++ ( import ./lib-common-pkgs.nix { inherit pkgs; } );
 
-  allPkgs = basePkgs ++ extraPkgs;
+  checkNoDuplicates = list:
+    let
+      inherit pkgs;
+      duplicates =
+        lib.unique (lib.filter (x:
+          (lib.count (y: y == x) list) > 1
+        ) list);
+
+    in
+      if duplicates != [] then
+        throw "Duplicates found:\n${lib.concatStringsSep "\n" duplicates}"
+      else
+        list;
+
+  allPkgs = checkNoDuplicates (basePkgs ++ extraPkgs);
 
   # --- Collect all lib directories dynamically ---
   libDirs =  lib.unique (lib.flatten (map (p: "${p}/lib") basePkgs))
