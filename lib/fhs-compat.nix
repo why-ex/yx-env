@@ -42,10 +42,8 @@ let
   allPkgs = basePkgs ++ extraPkgs;
 
   # --- Collect all lib directories dynamically ---
-  libDirs = lib.flatten (map (p:
-    let d = "${p}/lib";
-    in if builtins.pathExists d then [ d ] else []
-  ) allPkgs);
+  libDirs =  lib.unique (lib.flatten (map (p: "${p}/lib") basePkgs))
+    ++ (lib.unique (lib.sort lib.lessThan(lib.flatten (map (p: "${p}/lib") extraPkgs))));
 
   # --- Script to populate a directory with .so symlinks ---
   linkLibs = target: ''
