@@ -136,15 +136,15 @@
           # Add custom commands here (privileged?):
           # ---- ld.so.cache ----
           # provide linker config
-          cat > /etc/ld.so.conf <<EOF
+          ${pkgs.coreutils}/bin/cat > /etc/ld.so.conf <<EOF
 /usr/lib
 /lib
 /lib64
 EOF
-          /bin/ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache
-          /bin/ldconfig -p -C /etc/ld.so.cache
-          touch --reference=/etc/os-release /etc/ld.so.conf
-          touch --reference=/etc/os-release /etc/ld.so.cache
+          ${pkgs.glibc.bin}/bin/ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache
+          ${pkgs.glibc.bin}/bin/ldconfig -p -C /etc/ld.so.cache
+          ${pkgs.coreutils}/bin/touch --reference=/etc/os-release /etc/ld.so.conf
+          ${pkgs.coreutils}/bin/touch --reference=/etc/os-release /etc/ld.so.cache
         '';
 
         config = {
