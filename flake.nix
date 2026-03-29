@@ -74,46 +74,43 @@
       exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
     '';
 
-    yxCommonPkgs = import ./profiles/yx-yocto-pkgs.nix { inherit pkgs; };
+    mkEnv = profile:
+    let
+      yxPkgs = profile.pkgs;
 
-    yxAllPkgs = yxCommonPkgs ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit ];
+      fhs = import ./lib/fhs-compat.nix {
+        inherit pkgs;
+        extraPkgs = yxPkgs
+          ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit ];
+      };
 
-    fhs = import ./lib/fhs-compat.nix {
-      inherit pkgs;
-      extraPkgs = yxAllPkgs;
-    };
+      toolchain = import ./lib/yx-toolchain.nix {
+        inherit pkgs;
+        inputPkgs = yxPkgs;
+      };
 
-    enableToolchain = true;
-    toolchain = import ./lib/yx-toolchain.nix {
-      inherit pkgs;
-      inputPkgs = yxAllPkgs;
-    };
+    in {
+      # Creating a FHS compatible shell
+      devShell = pkgs.buildFHSEnv {
+        name = "yx-env-${profile.name}";
+        targetPkgs = pkgs:
+          fhs.allPkgs
+          ++ [ fhs.init ]
+          ++ pkgs.lib.optional profile.enableToolchain toolchain.cc;
 
-    # Creating a FHS shell
-    yxFHSEnv = pkgs.buildFHSEnv {
-      name = "yx-env";
-      targetPkgs = pkgs:
-        fhs.allPkgs
-        ++ [ fhs.init ]
-        ++ pkgs.lib.optional enableToolchain toolchain.cc;
+        # This script runs when the shell (or nix develop) starts
+        profile = ''
+          export LANG=en_US.UTF-8
+          export LC_ALL=en_US.UTF-8
+        '';
 
-      # This script runs when the shell (or nix develop) starts
-      profile = ''
-        export LANG=en_US.UTF-8
-        export LC_ALL=en_US.UTF-8
-      '';
+        runScript = "bash";
+      };
 
-      runScript = "bash";
-    };
-
-  in {
-    # Creating a FHSEnv shell
-    devShells.${system}.default = yxFHSEnv.env;
-
-    packages.${system} = {
+      # Creating a FHS compatible container
       container = pkgs.dockerTools.buildLayeredImage {
         name = "yx-env";
-        tag = "latest";
+        tag = profile.name;
         # This (now) breaks reproducibility:
         #created = "now";
 
@@ -126,7 +123,7 @@
           pkgs.dockerTools.caCertificates
           pkgs.dockerTools.fakeNss
         ]
-        ++ pkgs.lib.optional enableToolchain toolchain.cc;
+        ++ pkgs.lib.optional profile.enableToolchain toolchain.cc;
 
         maxLayers = 2;
         enableFakechroot = true;
@@ -155,5 +152,20 @@ EOF
         };
       };
     };
+
+    minimalProfile = import ./profiles/minimal.nix { inherit pkgs; };
+    yoctoProfile = import ./profiles/yocto.nix { inherit pkgs; };
+
+  in {
+    devShells.${system} = {
+      minimal = (mkEnv minimalProfile).devShell;
+      yocto = (mkEnv yoctoProfile).devShell;
+    };
+
+    packages.${system} = {
+      minimal-container = (mkEnv minimalProfile).container;
+      yocto-container = (mkEnv yoctoProfile).container;
+    };
+
   };
 }
