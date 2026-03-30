@@ -158,8 +158,8 @@ EOF
 
   in {
     devShells.${system} = {
-      minimal = (mkEnv minimalProfile).devShell;
-      yocto = (mkEnv yoctoProfile).devShell;
+      minimal = (mkEnv minimalProfile).devShell.env;
+      yocto = (mkEnv yoctoProfile).devShell.env;
     };
 
     packages.${system} = {
