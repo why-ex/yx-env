@@ -17,10 +17,31 @@
 # Profile for the yocto build environment.
 { pkgs }:
 
+let
+  lib = pkgs.lib;
+
+  # Wrapper for a missing executable required in Yocto:
+  lz4C = pkgs.writeShellScriptBin "lz4c" ''
+    exec ${pkgs.lz4.out}/bin/lz4 "$@"
+  '';
+
+  # Yocto specifc:
+  # This wrapper fixes the "one giant filename" issue
+  rpcgen-wrapper = pkgs.writeShellScriptBin "rpcgen" ''
+    # CPP often looks like "gcc -E --sysroot=..."
+    # which breaks rpcgen!
+    if [ -n "$CPP" ]; then
+      # Redefine CPP:
+      CPP=$(echo $CPP | awk '{print $1}' | sed 's/gcc/cpp/')
+    fi
+    exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
+  '';
+in
 {
   name = "yocto";
 
-  pkgs = import ./yx-yocto-pkgs.nix { inherit pkgs; };
+  pkgs = import ./yx-yocto-pkgs.nix { inherit pkgs; }
+    ++ ([ lz4C (lib.hiPrio rpcgen-wrapper) ]);
 
   enableToolchain = true;
 }

@@ -37,6 +37,7 @@
   iproute2
   less
   libtinfo
+  lz4
   patch
   perl
   python3

@@ -33,7 +33,6 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
-    # Yocto specifc:
     yxInit = pkgs.writeScriptBin "yx-init" ''
       #!/usr/bin/env bash
       echo "[yx-env] Running fhs-init..."
@@ -41,8 +40,7 @@
       exec "$@"
     '';
 
-    # Yocto specifc:
-    # Create a custom etc/oe-release file for the yx environment:
+    # Create a custom etc/os-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
       PRETTY_NAME="Why-Ex Environment"
       NAME="yx-env"
@@ -50,27 +48,9 @@
       VERSION_ID="0.0.1"
     '';
 
-    # Yocto specifc:
     fakeSudo = pkgs.writeScriptBin "sudo" ''
       #!/bin/sh
       exec "$@"
-    '';
-
-    # Wrapper for a missing executable required in Yocto:
-    lz4C = pkgs.writeShellScriptBin "lz4c" ''
-      exec ${pkgs.lz4.out}/bin/lz4 "$@"
-    '';
-
-    # Yocto specifc:
-    # This wrapper fixes the "one giant filename" issue
-    rpcgen-wrapper = pkgs.writeShellScriptBin "rpcgen" ''
-      # CPP often looks like "gcc -E --sysroot=..."
-      # which breaks rpcgen!
-      if [ -n "$CPP" ]; then
-        # Redefine CPP:
-        CPP=$(echo $CPP | awk '{print $1}' | sed 's/gcc/cpp/')
-      fi
-      exec ${pkgs.rpcsvc-proto}/bin/rpcgen "$@"
     '';
 
     mkEnv = profile:
@@ -80,7 +60,7 @@
       fhs = import ./lib/fhs-compat.nix {
         inherit pkgs;
         extraPkgs = yxPkgs
-          ++ [ fakeSudo lz4C (lib.hiPrio rpcgen-wrapper) osRelease yxInit ];
+          ++ [ fakeSudo osRelease yxInit ];
       };
 
       toolchain = import ./lib/yx-toolchain.nix {
