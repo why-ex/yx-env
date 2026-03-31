@@ -56,10 +56,9 @@
       exec "$@"
     '';
 
-    # Yocto specifc:
-    lz4C = pkgs.writeScriptBin "lz4c" ''
-      #!/bin/sh
-      exec "lz4 $@"
+    # Wrapper for a missing executable required in Yocto:
+    lz4C = pkgs.writeShellScriptBin "lz4c" ''
+      exec ${pkgs.lz4.out}/bin/lz4 "$@"
     '';
 
     # Yocto specifc:
