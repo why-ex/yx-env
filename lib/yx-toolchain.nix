@@ -30,6 +30,14 @@ let
 
   ldFlags = lib.concatMapStrings (d: "-L${d} ") libDirs;
 
+  # Collect include paths
+  incDirs = lib.flatten (map (p:
+    let d = "${p}/include";
+    in if builtins.pathExists d then [ d ] else []
+  ) [ pkgs.libxcrypt ]);
+
+  cFlags = lib.concatMapStrings (d: "-I${d} ") incDirs;
+
 in {
   cc = pkgs.wrapCCWith {
     cc = pkgs.stdenv.cc.cc;
@@ -39,6 +47,7 @@ in {
     extraBuildCommands = ''
       mkdir -p $out/nix-support
       echo "${ldFlags}" >> $out/nix-support/cc-ldflags
+      echo "${cFlags}" >> $out/nix-support/cc-cflags
     '';
   };
 }
