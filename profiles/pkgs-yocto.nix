@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-# yx-yocto-pkgs.nix
+# pkgs-yocto.nix
 # Extra nix packages for the yocto build environment.
 { pkgs }: with pkgs; [
   bashInteractive
