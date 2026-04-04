@@ -1,0 +1,81 @@
+#!/bin/bash
+
+set -eo pipefail
+
+usage_help ()
+{
+	echo ""
+	echo "Usage: $yxenv_self <command> <profile> [extra-nix-packages] [extra-nix-cmd-options]"
+	echo ""
+	echo "  Commands:"
+	echo "    - image - build a container image"
+	echo "    - shell - start a nix devShell"
+	echo ""
+	echo "  Profiles i.e.:"
+	echo "    - minimal - use a minimal set of packages"
+	echo "    - yocto - use a set of packages ready for default Yocto builds"
+	echo ""
+	echo "  Extra Nix packages:"
+	echo "    A list of extra Nix packages added to the selected profile."
+	echo "    (i.e. \"hello cowsay\")"
+	echo ""
+	echo "  Extra 'nix' command options:"
+	echo "    Extra options passed to final 'nix' command."
+	echo "    (i.e. -L --rebuild ...)"
+	echo ""
+}
+
+yxenv_self="$0"
+yxenv_cmd="$1"
+shift || true
+
+yxenv_profile="${1:-}"
+shift || true
+
+yxenv_extra="${1:-}"
+if [[ "$yxenv_extra" == -* ]]; then
+	yxenv_extra=""
+else
+	shift || true
+fi
+
+if [ -z "$yxenv_cmd" ]; then
+	echo "Missing command!"
+	usage_help
+	exit 1
+fi
+
+case "$yxenv_cmd" in
+help)
+	usage_help
+	;;
+
+image|shell)
+	if [ -z "$yxenv_profile" ]; then
+		echo "Missing profile!"
+		usage_help
+		exit 1
+	fi
+
+	echo "Building container image with profile: $yxenv_profile"
+	if [ -n "$yxenv_extra" ]; then
+		echo "  - adding extra packages; ${yxenv_profile}"
+	fi
+
+	case "$yxenv_cmd" in
+	image)
+		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" nix build .#env-container --impure $@
+		;;
+
+	shell)
+		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" nix develop .#env --impure $@
+		;;
+	esac
+	;;
+
+*)
+	echo "Unknown command: $yxenv_cmd"
+	usage_help
+	exit 1
+	;;
+esac

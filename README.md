@@ -10,10 +10,10 @@ It enables consistent builds across systems by packaging all required dependenci
 
 ### Build
 
-Build the flake output:
+Build the flake output for the yocto profile:
 
 ```sh
-nix build .#container
+./yxenv image yocto
 ```
 
 ### Load and Run
@@ -21,13 +21,13 @@ nix build .#container
 - Docker
 ```sh
 docker load < result
-docker run --rm -ti yx-env:latest
+docker run --rm -ti yx-env:yocto
 ```
 
 - Podman
 ```sh
 podman load < result
-podman run --rm -ti yx-env:latest
+podman run --rm -ti yx-env:yocto
 ```
 
 ### Running the Container (example)
@@ -45,7 +45,7 @@ docker run --rm -ti \
   -v /etc/group:/etc/group:ro \
   -v /etc/passwd:/etc/passwd:ro \
   --workdir=$(pwd) \
-  yx-env:latest
+  yx-env:yocto
 ```
 Then source your Yocto environment script and run `bitbake`.
 
@@ -53,10 +53,10 @@ Then source your Yocto environment script and run `bitbake`.
 
 ## Local FHS environment: buildFHSEnv
 
-### Build and enter
+### Build and enter the nix shell with yocto profile:
 
 ```sh
-nix develop
+./yxenv shell yocto
 ```
 Then navigate to your Yocto project directory, source its environment script and run `bitbake`.
 

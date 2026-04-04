@@ -55,7 +55,7 @@
 
     mkEnv = profile:
     let
-      yxPkgs = profile.pkgs;
+      yxPkgs = profile.pkgs ++ yxExtraPkgs;
 
       fhs = import ./lib/fhs-compat.nix {
         inherit pkgs;
@@ -132,18 +132,38 @@ EOF
       };
     };
 
-    minimalProfile = import ./profiles/minimal.nix { inherit pkgs; };
-    yoctoProfile = import ./profiles/yocto.nix { inherit pkgs; };
+    yxProfileSet = {
+      minimalProfile = import ./profiles/minimal.nix { inherit pkgs; };
+      yoctoProfile = import ./profiles/yocto.nix { inherit pkgs; };
+    };
+
+    yxProfileName = builtins.getEnv "YXENV_PROFILE" + "Profile";
+    yxProfile = yxProfileSet.${yxProfileName} or (throw "Unknown profile");
+
+    # Works for multiple packages set to YXENV_EXTRA:
+    # TODO: How to deal with packages like 'acl.bin'?
+/*
+    resolve = path:
+      let
+        parts = builtins.filter (x: x != ".")
+          (builtins.split "\\." path);
+      in
+      builtins.foldl'
+        (acc: key: acc.${key})
+        pkgs
+        parts;
+    yxExtraPkgs = map resolve (builtins.filter (x: x != []) (builtins.split " " (builtins.getEnv "YXENV_EXTRA")));
+    yxExtraPkgs = map (name: pkgs.${name}) (map resolve (builtins.filter (x: x != []) (builtins.split " " (builtins.getEnv "YXENV_EXTRA"))));
+*/
+    yxExtraPkgs = map (name: pkgs.${name}) (builtins.filter (x: x != "") (builtins.filter (x: x != []) (builtins.split " " (builtins.getEnv "YXENV_EXTRA"))));
 
   in {
     devShells.${system} = {
-      minimal = (mkEnv minimalProfile).devShell.env;
-      yocto = (mkEnv yoctoProfile).devShell.env;
+      env = (mkEnv yxProfile).devShell.env;
     };
 
     packages.${system} = {
-      minimal-container = (mkEnv minimalProfile).container;
-      yocto-container = (mkEnv yoctoProfile).container;
+      env-container = (mkEnv yxProfile).container;
     };
 
   };
