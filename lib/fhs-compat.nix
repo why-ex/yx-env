@@ -113,6 +113,7 @@ let
 
     # ---- Headers ----
     ln -sf ${pkgs.glibc.dev}/include/* $out/usr/include/
+    ln -sf ${pkgs.libxcrypt}/include/* $out/usr/include/
 
     # ---- Locale archive (CRITICAL) ----
     rm -rf $out/usr/lib/locale
@@ -131,6 +132,7 @@ let
     rm -f $out/lib/*[ch]
     ${linkLibs "$out/lib"}
     chmod 555 $out/lib
+    cp -a $out/lib/pkgconfig $out/usr/lib/
 
     # --- Dynamic linker (critical) ---
     mkdir -p $out/lib64
