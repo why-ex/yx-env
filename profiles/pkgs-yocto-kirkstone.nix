@@ -24,6 +24,7 @@
   diffstat
   diffutils
   file
+  file.dev
   findutils
   gawk
   gcc13

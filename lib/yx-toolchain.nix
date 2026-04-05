@@ -39,7 +39,7 @@ let
   incDirs = lib.flatten (map (p:
     let d = "${p}/include";
     in if builtins.pathExists d then [ d ] else []
-  ) [ pkgs.libxcrypt ]);
+  ) [ pkgs.libxcrypt pkgs.file.dev ]);
 
   cFlags = lib.concatMapStrings (d: "-I${d} ") incDirs;
 
