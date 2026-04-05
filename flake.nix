@@ -138,6 +138,7 @@ EOF
       minimalProfile = import ./profiles/minimal.nix { inherit pkgs; };
       yoctoProfile = import ./profiles/yocto.nix { inherit pkgs; };
       yocto-scarthgapProfile = import ./profiles/yocto-scarthgap.nix { inherit pkgs; };
+      yocto-kirkstoneProfile = import ./profiles/yocto-kirkstone.nix { inherit pkgs; };
     };
 
     yxProfileName = builtins.getEnv "YXENV_PROFILE" + "Profile";
