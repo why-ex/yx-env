@@ -33,10 +33,15 @@ yxenv_profile="${1:-}"
 shift || true
 
 yxenv_extend=
+yxenv_impure=
 yxenv_extra="${1:-}"
 if [[ "$yxenv_extra" == -* ]]; then
 	yxenv_extra=""
 else
+	if [[ -n "$CI" && -n "$yxenv_extra" ]]; then
+		echo "ERROR: Extra packages are not allowed in CI"
+		exit 1
+	fi
 	shift || true
 fi
 
@@ -61,18 +66,19 @@ image|shell)
 	echo "Building environment with profile: $yxenv_profile"
 	if [ -n "$yxenv_extra" ]; then
 		yxenv_extend="_extra"
+		yxenv_impure="--impure"
 		echo "  - adding extra packages: ${yxenv_extra}"
 	fi
 
 	case "$yxenv_cmd" in
 	image)
 		echo "  - container image: ${yxenv_profile}${yxenv_extend}"
-		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix build .#env-container --impure $@
+		exec env YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix build .#${yxenv_profile} ${yxenv_impure} $@
 		;;
 
 	shell)
 		echo "  - interactive shell: ${yxenv_profile}${yxenv_extend}"
-		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix develop .#env --impure $@
+		exec env YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix develop .#${yxenv_profile} ${yxenv_impure} $@
 		;;
 	esac
 	;;

@@ -143,14 +143,11 @@ EOF
     };
 
     yxProfileSet = {
-      minimalProfile = import ./profiles/minimal.nix { inherit pkgs; };
-      yoctoProfile = import ./profiles/yocto.nix { inherit pkgs; };
-      yocto-scarthgapProfile = import ./profiles/yocto-scarthgap.nix { inherit pkgs; };
-      yocto-kirkstoneProfile = import ./profiles/yocto-kirkstone.nix { inherit pkgs; };
+      minimal = import ./profiles/minimal.nix { inherit pkgs; };
+      yocto = import ./profiles/yocto.nix { inherit pkgs; };
+      yocto-scarthgap = import ./profiles/yocto-scarthgap.nix { inherit pkgs; };
+      yocto-kirkstone = import ./profiles/yocto-kirkstone.nix { inherit pkgs; };
     };
-
-    yxProfileName = builtins.getEnv "YXENV_PROFILE" + "Profile";
-    yxProfile = yxProfileSet.${yxProfileName} or (throw "Unknown profile");
 
     # Works for multiple packages set to YXENV_EXTRA:
     # TODO: How to deal with packages like 'acl.bin'?
@@ -171,13 +168,13 @@ EOF
     yxExtendName = builtins.getEnv "YXENV_EXTEND";
 
   in {
-    devShells.${system} = {
-      env = (mkEnv yxProfile).devShell.env;
-    };
+    devShells.${system} = builtins.mapAttrs (name: profile:
+      (mkEnv profile).devShell.env
+    ) yxProfileSet;
 
-    packages.${system} = {
-      env-container = (mkEnv yxProfile).container;
-    };
+    packages.${system} = builtins.mapAttrs (name: profile:
+      (mkEnv profile).container
+    ) yxProfileSet;
 
   };
 }
