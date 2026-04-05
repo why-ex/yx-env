@@ -40,7 +40,7 @@
   lz4
   patch
   perl
-  python3
+  python311
   rpcsvc-proto
   strace
   texinfo
