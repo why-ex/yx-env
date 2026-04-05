@@ -20,6 +20,11 @@
 let
   lib = pkgs.lib;
 
+  has = pkg: builtins.elem pkg inputPkgs;
+  gcc =
+    if has pkgs.gcc13 then (pkgs.overrideCC pkgs.stdenv pkgs.gcc13).cc.cc
+    else pkgs.stdenv.cc.cc; # default (latest version)
+
   allPkgs = inputPkgs ++ ( import ./lib-common-pkgs.nix { inherit pkgs; } );
 
   # Collect lib paths
@@ -40,7 +45,7 @@ let
 
 in {
   cc = pkgs.wrapCCWith {
-    cc = pkgs.stdenv.cc.cc;
+    cc = gcc;
     bintools = pkgs.binutils;
     libc = pkgs.glibc;
 

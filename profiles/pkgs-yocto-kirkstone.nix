@@ -26,6 +26,7 @@
   file
   findutils
   gawk
+  gcc13
   git
   gnugrep
   gnulib

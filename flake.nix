@@ -57,15 +57,23 @@
     let
       yxPkgs = profile.pkgs ++ yxExtraPkgs;
 
-      fhs = import ./lib/fhs-compat.nix {
-        inherit pkgs;
-        extraPkgs = yxPkgs
-          ++ [ fakeSudo osRelease yxInit ];
-      };
-
       toolchain = import ./lib/yx-toolchain.nix {
         inherit pkgs;
         inputPkgs = yxPkgs;
+      };
+      isGcc = pkg: builtins.match "^gcc.*" pkg.name != null;
+      fhsInputPkgs =
+        if profile.enableToolchain then
+          /* Remove original gcc from the list because it
+           * will be replaced by toolchain.cc wrapper. */
+          builtins.filter (pkg: !isGcc pkg) yxPkgs
+        else
+          yxPkgs;
+
+      fhs = import ./lib/fhs-compat.nix {
+        inherit pkgs;
+        extraPkgs = fhsInputPkgs
+          ++ [ fakeSudo osRelease yxInit ];
       };
 
       envName = profile.name + (if builtins.length yxExtraPkgs > 0 then yxExtendName else "");
