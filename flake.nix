@@ -68,10 +68,12 @@
         inputPkgs = yxPkgs;
       };
 
+      envName = profile.name + (if builtins.length yxExtraPkgs > 0 then yxExtendName else "");
+
     in {
       # Creating a FHS compatible shell
       devShell = pkgs.buildFHSEnv {
-        name = "yx-env-${profile.name}";
+        name = "yx-env-${envName}";
         targetPkgs = pkgs:
           fhs.allPkgs
           ++ [ fhs.init ]
@@ -89,7 +91,7 @@
       # Creating a FHS compatible container
       container = pkgs.dockerTools.buildLayeredImage {
         name = "yx-env";
-        tag = profile.name;
+        tag = envName;
         # This (now) breaks reproducibility:
         #created = "now";
 
@@ -157,6 +159,7 @@ EOF
     yxExtraPkgs = map (name: pkgs.${name}) (map resolve (builtins.filter (x: x != []) (builtins.split " " (builtins.getEnv "YXENV_EXTRA"))));
 */
     yxExtraPkgs = map (name: pkgs.${name}) (builtins.filter (x: x != "") (builtins.filter (x: x != []) (builtins.split " " (builtins.getEnv "YXENV_EXTRA"))));
+    yxExtendName = builtins.getEnv "YXENV_EXTEND";
 
   in {
     devShells.${system} = {
