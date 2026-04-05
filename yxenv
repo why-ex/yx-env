@@ -32,6 +32,7 @@ shift || true
 yxenv_profile="${1:-}"
 shift || true
 
+yxenv_extend=
 yxenv_extra="${1:-}"
 if [[ "$yxenv_extra" == -* ]]; then
 	yxenv_extra=""
@@ -57,18 +58,21 @@ image|shell)
 		exit 1
 	fi
 
-	echo "Building container image with profile: $yxenv_profile"
+	echo "Building environment with profile: $yxenv_profile"
 	if [ -n "$yxenv_extra" ]; then
-		echo "  - adding extra packages; ${yxenv_profile}"
+		yxenv_extend="_extra"
+		echo "  - adding extra packages: ${yxenv_extra}"
 	fi
 
 	case "$yxenv_cmd" in
 	image)
-		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" nix build .#env-container --impure $@
+		echo "  - container image: ${yxenv_profile}${yxenv_extend}"
+		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix build .#env-container --impure $@
 		;;
 
 	shell)
-		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" nix develop .#env --impure $@
+		echo "  - interactive shell: ${yxenv_profile}${yxenv_extend}"
+		exec env YXENV_PROFILE="$yxenv_profile" YXENV_EXTRA="${yxenv_extra}" YXENV_EXTEND="${yxenv_extend}" nix develop .#env --impure $@
 		;;
 	esac
 	;;
