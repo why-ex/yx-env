@@ -76,7 +76,7 @@ let
   fhsInit = pkgs.writeScriptBin "fhs-init" ''
     #!/bin/sh
     set -e
-    echo "[fhs-init] ..."
+    echo "[fhs] init..."
   '';
 
   # --- Define the "FHS-like" environment ---

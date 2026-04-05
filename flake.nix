@@ -33,9 +33,11 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
+    yxEnvVer = "0.0.2";
+
     yxInit = pkgs.writeScriptBin "yx-init" ''
       #!/usr/bin/env bash
-      echo "[yx-env] Running fhs-init..."
+      echo "[yxenv] Running fhs-init..."
       /bin/fhs-init
       exec "$@"
     '';
@@ -45,7 +47,7 @@
       PRETTY_NAME="Why-Ex Environment"
       NAME="yx-env"
       ID="yxenv"
-      VERSION_ID="0.0.1"
+      VERSION_ID="${yxEnvVer}"
     '';
 
     fakeSudo = pkgs.writeScriptBin "sudo" ''
@@ -81,7 +83,7 @@
     in {
       # Creating a FHS compatible shell
       devShell = pkgs.buildFHSEnv {
-        name = "yx-env-${envName}";
+        name = "yxenv-${yxEnvVer}:${envName}";
         targetPkgs = pkgs:
           fhs.allPkgs
           ++ [ fhs.init ]
@@ -98,7 +100,7 @@
 
       # Creating a FHS compatible container
       container = pkgs.dockerTools.buildLayeredImage {
-        name = "yx-env";
+        name = "yxenv-${yxEnvVer}";
         tag = envName;
         # This (now) breaks reproducibility:
         #created = "now";
