@@ -2,7 +2,8 @@ name: Build YX Environments
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]
+    tags: [ "v*" ]
   pull_request:
 
 jobs:
@@ -30,11 +31,39 @@ jobs:
       #    name: your-cache-name
       #    authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
+      - name: Compute image tag
+        id: meta
+        run: |
+          PROFILE=${{ matrix.profile }}
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+            VERSION=${VERSION#v}   # strip leading 'v' if present
+            TAG="${VERSION}-${PROFILE}"
+          else
+            BRANCH=${{ github.ref_name }}
+            TAG="${BRANCH}-${PROFILE}"
+          fi
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - name: Get version from flake
         id: version
         run: |
           VERSION=$(nix eval --raw .#lib.version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Verify tag matches flake version
+        if: github.ref_type == 'tag'
+        run: |
+          FLAKE_VERSION=$(nix eval --raw .#lib.version)
+          TAG_VERSION=${{ github.ref_name }}
+          TAG_VERSION=${TAG_VERSION#v}
+
+          if [[ "$FLAKE_VERSION" != "$TAG_VERSION" ]]; then
+            echo "Version mismatch!"
+            exit 1
+          fi
 
       #- name: Build devShell (sanity check)
       #  run: nix develop .#${{ matrix.profile }} -c true
@@ -54,9 +83,16 @@ jobs:
 
       - name: Push image
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          PROFILE=${{ matrix.profile }}
-          IMAGE=ghcr.io/${{ github.repository }}:${VERSION}-${PROFILE}
+          IMAGE=ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
 
           docker tag $(docker images --quiet | head -n1) $IMAGE
+          docker push $IMAGE
+
+      - name: Tag latest (only for releases)
+        if: github.ref_type == 'tag'
+        run: |
+          LOCAL=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep yx-env | head -n1)
+
+          IMAGE=ghcr.io/${{ github.repository }}:${{ matrix.profile }}
+          docker tag $LOCAL $IMAGE
           docker push $IMAGE
