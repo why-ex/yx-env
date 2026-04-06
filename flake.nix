@@ -33,7 +33,7 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
-    yxEnvVer = "0.0.2";
+    yxEnvVer = "0.0.3";
 
     yxInit = pkgs.writeScriptBin "yx-init" ''
       #!/usr/bin/env bash
