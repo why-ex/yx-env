@@ -69,10 +69,24 @@ jobs:
       #  run: nix develop .#${{ matrix.profile }} -c true
 
       - name: Build container image
-        run: nix build .#${{ matrix.profile }}
+        run: |
+          nix build .#${{ matrix.profile }}
+          ls -al
 
       - name: Load container image
-        run: docker load < result
+        id: load
+        run: |
+          OUTPUT=$(docker load < result)
+          echo "$OUTPUT"
+
+          IMAGE_NAME=$(echo "$OUTPUT" | sed -n 's/^Loaded image: //p')
+          IMAGE_ID=$(echo "$OUTPUT" | sed -n 's/^Loaded image ID: //p')
+
+          if [[ -n "$IMAGE_NAME" ]]; then
+            echo "ref=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "ref=$IMAGE_ID" >> $GITHUB_OUTPUT
+          fi
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -81,18 +95,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push image
+      - name: Tag and push image
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+          REF=${{ steps.load.outputs.ref }}
 
-          docker tag $(docker images --quiet | head -n1) $IMAGE
-          docker push $IMAGE
+          TAG=${{ steps.meta.outputs.tag }}
+          IMAGE=ghcr.io/${{ github.repository }}:$TAG
+
+          docker tag "$REF" "$IMAGE"
+          docker push "$IMAGE"
 
       - name: Tag latest (only for releases)
         if: github.ref_type == 'tag'
         run: |
-          LOCAL=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep yx-env | head -n1)
-
+          REF=${{ steps.load.outputs.ref }}
           IMAGE=ghcr.io/${{ github.repository }}:${{ matrix.profile }}
-          docker tag $LOCAL $IMAGE
-          docker push $IMAGE
+
+          docker tag "$REF" "$IMAGE"
+          docker push "$IMAGE"
