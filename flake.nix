@@ -78,12 +78,12 @@
           ++ [ fakeSudo osRelease yxInit ];
       };
 
-      envName = profile.name + (if builtins.length yxExtraPkgs > 0 then yxExtendName else "");
+      envName = "${yxEnvVer}-" + profile.name + (if builtins.length yxExtraPkgs > 0 then yxExtendName else "");
 
     in {
       # Creating a FHS compatible shell
       devShell = pkgs.buildFHSEnv {
-        name = "yxenv-${yxEnvVer}:${envName}";
+        name = "yx-env:${envName}";
         targetPkgs = pkgs:
           fhs.allPkgs
           ++ [ fhs.init ]
@@ -100,7 +100,7 @@
 
       # Creating a FHS compatible container
       container = pkgs.dockerTools.buildLayeredImage {
-        name = "yxenv-${yxEnvVer}";
+        name = "yx-env";
         tag = envName;
         # This (now) breaks reproducibility:
         #created = "now";
@@ -170,6 +170,8 @@ EOF
     yxExtendName = builtins.getEnv "YXENV_EXTEND";
 
   in {
+    lib.version = yxEnvVer;
+
     devShells.${system} = builtins.mapAttrs (name: profile:
       (mkEnv profile).devShell.env
     ) yxProfileSet;
