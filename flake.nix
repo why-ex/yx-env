@@ -33,7 +33,7 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
-    yxEnvVer = "0.0.4";
+    yxEnvVer = "0.1.0";
 
     # Create a custom etc/os-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
@@ -168,6 +168,7 @@ EOF
       yocto = import ./profiles/yocto.nix { inherit pkgs; };
       yocto-scarthgap = import ./profiles/yocto-scarthgap.nix { inherit pkgs; };
       yocto-kirkstone = import ./profiles/yocto-kirkstone.nix { inherit pkgs; };
+      yocto-kirkstone-kas52 = import ./profiles/yocto-kirkstone-kas52.nix { inherit pkgs; };
     };
 
     # Works for multiple packages set to YXENV_EXTRA:

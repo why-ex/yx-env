@@ -1,0 +1,61 @@
+/*
+   Copyright 2026 Samo Pogačnik
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+# pkgs-yocto-kirkstone-kas52.nix
+# Extra nix packages for the yocto build environment.
+{ pkgs }: with pkgs; [
+  bashInteractive
+  bzip2
+  chrpath
+  coreutils
+  cpio
+  diffstat
+  diffutils
+  file
+  file.dev
+  findutils
+  gawk
+  gcc13
+  git
+  gnugrep
+  gnulib
+  gnumake
+  gnused
+  gnutar
+  gosu
+  gzip
+  hostname
+  iproute2
+  kas
+  less
+  libtinfo
+  lz4
+  mktemp
+  patch
+  perl
+  python311
+  rpcsvc-proto
+ (shadow.override { pam = null; })
+  strace
+  texinfo
+  tmux
+  tzdata
+  util-linux
+  vim
+  wget
+  which
+  xz
+  zstd
+]
