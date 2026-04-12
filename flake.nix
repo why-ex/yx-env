@@ -35,13 +35,6 @@
 
     yxEnvVer = "0.0.4";
 
-    yxInit = pkgs.writeScriptBin "yx-init" ''
-      #!/usr/bin/env bash
-      echo "[yxenv] Running fhs-init..."
-      /bin/fhs-init
-      exec "$@"
-    '';
-
     # Create a custom etc/os-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
       PRETTY_NAME="Why-Ex Environment"
@@ -71,6 +64,16 @@
           builtins.filter (pkg: !isGcc pkg) yxPkgs
         else
           yxPkgs;
+
+      yxInit = pkgs.writeScriptBin "yx-init" ''
+        #!/usr/bin/env bash
+        echo "[yxenv] Running fhs-init..."
+        /bin/fhs-init
+        if [ -n "${profile.extraEntryPoint}" ]; then
+          exec ${profile.extraEntryPoint} "$@"
+        fi
+        exec "$@"
+      '';
 
       fhs = import ./lib/fhs-compat.nix {
         inherit pkgs;
@@ -112,7 +115,6 @@
           pkgs.dockerTools.binSh
           pkgs.dockerTools.usrBinEnv
           pkgs.dockerTools.caCertificates
-          pkgs.dockerTools.fakeNss
         ]
         ++ pkgs.lib.optional profile.enableToolchain toolchain.cc;
 
@@ -131,6 +133,23 @@ EOF
           ${pkgs.glibc.bin}/bin/ldconfig -p -C /etc/ld.so.cache
           ${pkgs.coreutils}/bin/touch --reference=/etc/os-release /etc/ld.so.conf
           ${pkgs.coreutils}/bin/touch --reference=/etc/os-release /etc/ld.so.cache
+          # Provide different default 'passwd' and 'group' files instead
+          # of using 'pkgs.dockerTools.fakeNss'.
+          ${pkgs.coreutils}/bin/cat > /etc/passwd <<EOF
+root:x:0:0:root user:/var/empty:/bin/sh
+nobody:x:65534:65534:nobody:/var/empty:/bin/sh
+builder:x:1001:1001::/home/myuser:/bin/sh
+EOF
+          ${pkgs.coreutils}/bin/cat > /etc/group <<EOF
+root:x:0:
+nobody:x:65534:
+builder:x:1001:
+EOF
+          mkdir /builder
+          mkdir /tmp
+          chmod a+rwx,+t /tmp
+          mkdir -p /var/tmp
+          chmod a+rwx,+t /var/tmp
         '';
 
         config = {
@@ -139,7 +158,7 @@ EOF
           Env = [
             "LANG=en_US.UTF-8"
             "LC_ALL=en_US.UTF-8"
-          ];
+          ] ++ profile.extraEnvironVars;
         };
       };
     };

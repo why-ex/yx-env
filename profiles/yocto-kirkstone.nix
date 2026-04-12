@@ -27,4 +27,6 @@ in
     ++ common-yocto;
 
   enableToolchain = true;
+  extraEntryPoint = "";
+  extraEnvironVars = [];
 }
