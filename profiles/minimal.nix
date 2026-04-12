@@ -27,4 +27,6 @@
   ];
 
   enableToolchain = false;
+  extraEntryPoint = "";
+  extraEnvironVars = [];
 }

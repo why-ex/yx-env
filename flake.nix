@@ -33,7 +33,7 @@
     pkgs = nixpkgs.legacyPackages.${system};
     lib = pkgs.lib;
 
-    yxEnvVer = "0.1.0";
+    yxEnvVer = "0.1.1";
 
     # Create a custom etc/os-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
