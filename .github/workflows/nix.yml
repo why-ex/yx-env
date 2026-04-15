@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        profile: [ minimal, yocto, yocto-scarthgap, yocto-kirkstone, yocto-kirkstone-kas52 ]
+        profile: [ minimal, yocto, yocto-scarthgap, yocto-scarthgap-kas52, yocto-kirkstone, yocto-kirkstone-kas52 ]
 
     steps:
       - name: Checkout
