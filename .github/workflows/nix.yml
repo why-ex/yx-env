@@ -96,6 +96,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag and push image
+        if: github.ref_type == 'tag'
         run: |
           REF=${{ steps.load.outputs.ref }}
 
