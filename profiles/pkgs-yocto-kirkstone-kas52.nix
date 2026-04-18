@@ -45,7 +45,9 @@
   mktemp
   patch
   perl
-  python311
+ (pkgs.python311.withPackages (ps: [
+    ps.requests
+ ]))
   rpcsvc-proto
  (shadow.override { pam = null; })
   strace
