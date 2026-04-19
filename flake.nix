@@ -83,6 +83,10 @@
 
       envName = "${yxEnvVer}-" + profile.name + (if builtins.length yxExtraPkgs > 0 then yxExtendName else "");
 
+      extraExportLines = builtins.concatStringsSep "\n" (
+        map (v: "export ${v}") profile.extraEnvironVars
+      );
+
     in {
       # Creating a FHS compatible shell
       devShell = pkgs.buildFHSEnv {
@@ -96,6 +100,7 @@
         profile = ''
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
+          ${extraExportLines}
         '';
 
         runScript = "bash";
