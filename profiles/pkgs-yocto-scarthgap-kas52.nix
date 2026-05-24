@@ -46,6 +46,7 @@
   python3
   rpcsvc-proto
  (shadow.override { pam = null; })
+  socat
   strace
   texinfo
   tmux
