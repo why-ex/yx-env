@@ -100,6 +100,11 @@
         profile = ''
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
+          export YXENV=1
+          export YXENV_VERSION=${yxEnvVer}
+          export YXENV_PROFILE=${profile.name}
+          export YXENV_BACKEND=devshell
+          export YX_LAYER=env
           ${extraExportLines}
         '';
 
@@ -163,6 +168,11 @@ EOF
           Env = [
             "LANG=en_US.UTF-8"
             "LC_ALL=en_US.UTF-8"
+            "YXENV=1"
+            "YXENV_VERSION=${yxEnvVer}"
+            "YXENV_PROFILE=${profile.name}"
+            "YXENV_BACKEND=container"
+            "YX_LAYER=env"
           ] ++ profile.extraEnvironVars;
         };
       };
