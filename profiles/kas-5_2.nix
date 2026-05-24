@@ -13,52 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-# pkgs-yocto-scarthgap-kas52.nix
-# Extra nix packages for the yocto build environment.
+# kas-5_2.nix
+# Pinned kas package for kas52 profiles.
 { pkgs }:
 
 let
-  kas52 = import ./kas-5_2.nix { inherit pkgs; };
-in with pkgs; [
-  bashInteractive
-  bzip2
-  chrpath
-  coreutils
-  cpio
-  diffstat
-  diffutils
-  file
-  findutils
-  gawk
-  git
-  gnugrep
-  gnulib
-  gnumake
-  gnused
-  gnutar
-  gosu
-  gzip
-  hostname
-  iproute2
-  kas52
-  less
-  libtinfo
-  lz4
-  mktemp
-  patch
-  perl
-  python3
-  rpcsvc-proto
- (shadow.override { pam = null; })
-  socat
-  strace
-  texinfo
-  tmux
-  tzdata
-  util-linux
-  vim
-  wget
-  which
-  xz
-  zstd
-]
+  lib = pkgs.lib;
+  expectedVersion = "5.2";
+  kasPkg = pkgs.kas;
+  actualVersion = kasPkg.version or (lib.getVersion kasPkg);
+in
+assert lib.assertMsg (actualVersion == expectedVersion)
+  "kas52 profiles require kas ${expectedVersion}, but nixpkgs provides kas ${actualVersion}";
+kasPkg

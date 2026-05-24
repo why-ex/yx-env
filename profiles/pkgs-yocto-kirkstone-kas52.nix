@@ -15,7 +15,11 @@
 */
 # pkgs-yocto-kirkstone-kas52.nix
 # Extra nix packages for the yocto build environment.
-{ pkgs }: with pkgs; [
+{ pkgs }:
+
+let
+  kas52 = import ./kas-5_2.nix { inherit pkgs; };
+in with pkgs; [
   bashInteractive
   bzip2
   chrpath
@@ -38,7 +42,7 @@
   gzip
   hostname
   iproute2
-  kas
+  kas52
   less
   libtinfo
   lz4
