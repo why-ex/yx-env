@@ -13,7 +13,8 @@ Prebuilt release images are published to GitHub Container Registry. See
 
 ### Build
 
-Build the flake output for the yocto profile:
+Build the flake output for the `yocto` profile. The local image tag includes
+both the yx-env version and the profile name.
 
 ```sh
 ./yxenv image yocto
@@ -24,13 +25,13 @@ Build the flake output for the yocto profile:
 - Docker
 ```sh
 docker load < result
-docker run --rm -ti yx-env:yocto
+docker run --rm -ti yx-env:0.1.5-yocto
 ```
 
 - Podman
 ```sh
 podman load < result
-podman run --rm -ti yx-env:yocto
+podman run --rm -ti yx-env:0.1.5-yocto
 ```
 
 ### Running the Container (example)
@@ -48,7 +49,7 @@ docker run --rm -ti \
   -v /etc/group:/etc/group:ro \
   -v /etc/passwd:/etc/passwd:ro \
   --workdir=$(pwd) \
-  yx-env:yocto
+  yx-env:0.1.5-yocto
 ```
 Then source your Yocto environment script and run `bitbake`.
 
@@ -76,7 +77,7 @@ Example:
 ```sh
 mkdir -p /tmp/yx-env-smoke
 cd /tmp/yx-env-smoke
-/path/to/yx-env/yxenv shell yocto-scarthgap-kas52 --command \
+nix develop /path/to/yx-env#yocto-scarthgap-kas52 --command \
   /path/to/yx-env/smoke/run-kas-smoke.sh scarthgap parse
 ```
 

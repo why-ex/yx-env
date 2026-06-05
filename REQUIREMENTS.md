@@ -66,7 +66,7 @@ nix eval --raw .#lib.version
 Current expected value:
 
 ```text
-0.1.4
+0.1.5
 ```
 
 ### YXENV-FLAKE-003: Linux container system
@@ -541,7 +541,7 @@ At least one container image SHOULD build and run a basic command:
 cd yx-env
 nix build .#minimal
 docker load < result
-docker run --rm yx-env:0.1.4-minimal env
+docker run --rm yx-env:0.1.5-minimal env
 ```
 
 The exact image tag MUST match the current environment name logic.

@@ -19,7 +19,7 @@ throwaway workspace, not from a production Yocto checkout.
 ```sh
 mkdir -p /tmp/yx-env-smoke
 cd /tmp/yx-env-smoke
-/path/to/yx-env/yxenv shell yocto-scarthgap-kas52 --command \
+nix develop /path/to/yx-env#yocto-scarthgap-kas52 --command \
   /path/to/yx-env/smoke/run-kas-smoke.sh scarthgap dump
 ```
 
