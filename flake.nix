@@ -174,6 +174,14 @@ EOF
             "YXENV_BACKEND=container"
             "YX_LAYER=env"
           ] ++ profile.extraEnvironVars;
+          Labels = {
+            "org.opencontainers.image.title" = "yx-env";
+            "org.opencontainers.image.description" = "Reproducible Nix/FHS environments for Yocto and kas builds";
+            "org.opencontainers.image.version" = yxEnvVer;
+            "org.opencontainers.image.ref.name" = envName;
+            "org.opencontainers.image.source" = "https://github.com/why-ex/yx-env";
+            "org.opencontainers.image.licenses" = "Apache-2.0";
+          };
         };
       };
     };

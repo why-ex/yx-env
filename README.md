@@ -8,6 +8,9 @@ It enables consistent builds across systems by packaging all required dependenci
 
 ## Container Image (Recommended)
 
+Prebuilt release images are published to GitHub Container Registry. See
+[`docs/images.md`](docs/images.md) for tag names and Docker/Podman examples.
+
 ### Build
 
 Build the flake output for the yocto profile:
