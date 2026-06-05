@@ -108,6 +108,8 @@ Best for local development workflows:
 - Reproducible Yocto Project builds
 - No host contamination
 - Works with multiple Yocto LTS versions (e.g. Kirkstone, Scarthgap)
+- Documents exact supported release lines and kas versions in
+  [`docs/support-matrix.md`](docs/support-matrix.md)
 - Supports both containerized and local development workflows
 - Powered by Nix flakes
 
