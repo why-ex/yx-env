@@ -1,0 +1,22 @@
+header:
+  version: 14
+
+repos:
+  poky:
+    url: https://git.yoctoproject.org/poky
+    branch: kirkstone
+    layers:
+      meta:
+      meta-poky:
+      meta-yocto-bsp:
+
+machine: qemux86-64
+distro: poky
+target:
+  - core-image-minimal
+
+local_conf_header:
+  yx-env-smoke: |
+    CONF_VERSION = "2"
+    BB_NUMBER_THREADS ?= "2"
+    PARALLEL_MAKE ?= "-j 2"

@@ -65,6 +65,21 @@ Then navigate to your Yocto project directory, source its environment script and
 
 ---
 
+## Smoke validation
+
+Small upstream Yocto/kas smoke projects are available under [`smoke/`](smoke/).
+They can validate `kas dump`, `kas checkout`, and a no-build BitBake parser run
+(`bitbake -p`) for the supported LTS profiles.
+
+Example:
+
+```sh
+mkdir -p /tmp/yx-env-smoke
+cd /tmp/yx-env-smoke
+/path/to/yx-env/yxenv shell yocto-scarthgap-kas52 --command \
+  /path/to/yx-env/smoke/run-kas-smoke.sh scarthgap parse
+```
+
 ## When to Use Which Environment
 
 ### Container (Recommended)
