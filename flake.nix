@@ -17,9 +17,13 @@
   description = "A flake to build yx environments";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
+
+    # Pi agent sandbox/runtime used by devShells.${system}.agent.
+    pi-env.url = "github:u2up/pi-env";
+    pi-env.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs }: let
+  outputs = { self, nixpkgs, pi-env }: let
     system = "x86_64-linux"; # Containers must be built for Linux
     config = {
       # Disable docs/manpages globally
@@ -216,9 +220,27 @@ EOF
   in {
     lib.version = yxEnvVer;
 
-    devShells.${system} = builtins.mapAttrs (name: profile:
+    devShells.${system} = (builtins.mapAttrs (name: profile:
       (mkEnv profile).devShell.env
-    ) yxProfileSet;
+    ) yxProfileSet) // {
+      agent = pi-env.lib.mkPiShell {
+        inherit pkgs;
+
+        # Set to true if this repository will use pi-env's Git-backed
+        # coordination helpers (pienv coord ..., pienv roles ...).
+        includeCoordinationHelpers = true;
+
+        # Add project-specific command-line tools that Pi should be able to run
+        # inside the Bubblewrap sandbox.  pi-env already provides its core
+        # runtime tools (bash, git, jq, rg, fd, node, etc.).
+        extraPackages = with pkgs; [
+        ];
+
+        shellHook = ''
+          echo "Pi agent shell loaded. Use 'pienv' or 'pienv shell'."
+        '';
+      };
+    };
 
     packages.${system} = builtins.mapAttrs (name: profile:
       (mkEnv profile).container
