@@ -1,0 +1,3 @@
+version: 1
+coordination_remote: /home/samo/GITHUB/why-ex/whyex-coordination.git
+repo_id: yxenv
