@@ -20,11 +20,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1784986283,
-        "narHash": "sha256-itf8aFW6RgnGZJ23OXXVPQX/cDkEZ0/S+prrn9+4b0Q=",
+        "lastModified": 1785686075,
+        "narHash": "sha256-z1kXFmao96tf38A3iKUJRTRIcB8rHHHliGcrUHOetVk=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "827022194a7cf7e3949ec3ba1f06df3dd2e5c00a",
+        "rev": "cfd66c762a5085adc0d2dd895f5274697881ba1d",
         "type": "github"
       },
       "original": {
@@ -33,7 +33,7 @@
         "type": "github"
       }
     },
-    "pi-env": {
+    "pi-en": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": [
@@ -41,23 +41,23 @@
         ]
       },
       "locked": {
-        "lastModified": 1784986299,
-        "narHash": "sha256-w/a0OghKQI08rjS9ZG/LOMEN2HdoC8cbTFsp0ELs+fc=",
+        "lastModified": 1785665776,
+        "narHash": "sha256-4hla+QlOhsXWqNWGbgV4FGotLLaTPcX2Eg++qP2+tPA=",
         "owner": "u2up",
-        "repo": "pi-env",
-        "rev": "aaaa96b6f781fedeed58c50ac81dc440b7c75630",
+        "repo": "pi-en",
+        "rev": "f5ff52a0e9cce31d18c57f4200a185036d4dc485",
         "type": "github"
       },
       "original": {
         "owner": "u2up",
-        "repo": "pi-env",
+        "repo": "pi-en",
         "type": "github"
       }
     },
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "pi-env": "pi-env"
+        "pi-en": "pi-en"
       }
     },
     "systems": {

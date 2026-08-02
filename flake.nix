@@ -19,11 +19,11 @@
     nixpkgs.url = "github:nixos/nixpkgs";
 
     # Pi agent sandbox/runtime used by devShells.${system}.agent.
-    pi-env.url = "github:u2up/pi-env";
-    pi-env.inputs.nixpkgs.follows = "nixpkgs";
+    pi-en.url = "github:u2up/pi-en";
+    pi-en.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, pi-env }: let
+  outputs = { self, nixpkgs, pi-en }: let
     system = "x86_64-linux"; # Containers must be built for Linux
     config = {
       # Disable docs/manpages globally
@@ -223,21 +223,21 @@ EOF
     devShells.${system} = (builtins.mapAttrs (name: profile:
       (mkEnv profile).devShell.env
     ) yxProfileSet) // {
-      agent = pi-env.lib.mkPiShell {
+      agent = pi-en.lib.mkPiShell {
         inherit pkgs;
 
-        # Set to true if this repository will use pi-env's Git-backed
-        # coordination helpers (pienv coord ..., pienv roles ...).
+        # Set to true if this repository will use pi-en's Git-backed
+        # coordination helpers (pien coord ..., pien roles ...).
         includeCoordinationHelpers = true;
 
         # Add project-specific command-line tools that Pi should be able to run
-        # inside the Bubblewrap sandbox.  pi-env already provides its core
+        # inside the Bubblewrap sandbox.  pi-en already provides its core
         # runtime tools (bash, git, jq, rg, fd, node, etc.).
         extraPackages = with pkgs; [
         ];
 
         shellHook = ''
-          echo "Pi agent shell loaded. Use 'pienv' or 'pienv shell'."
+          echo "Pi agent shell loaded. Use 'pien' or 'pien shell'."
         '';
       };
     };
