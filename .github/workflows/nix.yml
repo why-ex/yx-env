@@ -50,13 +50,13 @@ jobs:
       - name: Get version from flake
         id: version
         run: |
-          VERSION=$(nix eval --raw .#lib.version)
+          VERSION=$(nix eval --no-write-lock-file --raw .#lib.version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Verify tag matches flake version
         if: github.ref_type == 'tag'
         run: |
-          FLAKE_VERSION=$(nix eval --raw .#lib.version)
+          FLAKE_VERSION=$(nix eval --no-write-lock-file --raw .#lib.version)
           TAG_VERSION=${{ github.ref_name }}
           TAG_VERSION=${TAG_VERSION#v}
 
@@ -70,8 +70,14 @@ jobs:
 
       - name: Build container image
         run: |
-          nix build .#${{ matrix.profile }}
+          nix build --no-write-lock-file .#${{ matrix.profile }}
           ls -al
+
+      - name: Verify flake.lock unchanged
+        run: |
+          # CI must build from the committed lock file. Refresh flake inputs in
+          # explicit PRs instead of letting container builds mutate flake.lock.
+          git diff --exit-code -- flake.lock
 
       - name: Load container image
         id: load
