@@ -18,12 +18,17 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
 
+    # Dedicated package set that is known to provide kas 5.2.  Keep this
+    # independent from the main nixpkgs input so kas52 profiles are not
+    # affected by unrelated package-set drift.
+    nixpkgs-kas52.url = "github:nixos/nixpkgs/5cde78eacb5b519c0b711a7cec1ab1f0dd577183";
+
     # Pi agent sandbox/runtime used by devShells.${system}.agent.
     pi-en.url = "github:u2up/pi-en";
     pi-en.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, pi-en }: let
+  outputs = { self, nixpkgs, nixpkgs-kas52, pi-en }: let
     system = "x86_64-linux"; # Containers must be built for Linux
     config = {
       # Disable docs/manpages globally
@@ -35,6 +40,7 @@
       };
     };
     pkgs = nixpkgs.legacyPackages.${system};
+    kas52Pkgs = import nixpkgs-kas52 { inherit system config; };
     lib = pkgs.lib;
 
     yxEnvVer = "0.1.5";
@@ -194,9 +200,9 @@ EOF
       minimal = import ./profiles/minimal.nix { inherit pkgs; };
       yocto = import ./profiles/yocto.nix { inherit pkgs; };
       yocto-scarthgap = import ./profiles/yocto-scarthgap.nix { inherit pkgs; };
-      yocto-scarthgap-kas52 = import ./profiles/yocto-scarthgap-kas52.nix { inherit pkgs; };
+      yocto-scarthgap-kas52 = import ./profiles/yocto-scarthgap-kas52.nix { inherit pkgs kas52Pkgs; };
       yocto-kirkstone = import ./profiles/yocto-kirkstone.nix { inherit pkgs; };
-      yocto-kirkstone-kas52 = import ./profiles/yocto-kirkstone-kas52.nix { inherit pkgs; };
+      yocto-kirkstone-kas52 = import ./profiles/yocto-kirkstone-kas52.nix { inherit pkgs kas52Pkgs; };
     };
 
     # Works for multiple packages set to YXENV_EXTRA:

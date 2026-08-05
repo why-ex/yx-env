@@ -57,7 +57,8 @@
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "pi-en": "pi-en"
+        "pi-en": "pi-en",
+        "nixpkgs-kas52": "nixpkgs-kas52"
       }
     },
     "systems": {
@@ -72,6 +73,22 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "nixpkgs-kas52": {
+      "locked": {
+        "lastModified": 1772264382,
+        "narHash": "sha256-oONIZd0elyxcDj0hQv2KzRfW2gcfXEMG3+ObQSHuOQg=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "5cde78eacb5b519c0b711a7cec1ab1f0dd577183",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "5cde78eacb5b519c0b711a7cec1ab1f0dd577183",
         "type": "github"
       }
     }

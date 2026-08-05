@@ -15,10 +15,10 @@
 */
 # pkgs-yocto-scarthgap-kas52.nix
 # Extra nix packages for the yocto build environment.
-{ pkgs }:
+{ pkgs, kas52Pkgs ? pkgs }:
 
 let
-  kas52 = import ./kas-5_2.nix { inherit pkgs; };
+  kas52 = import ./kas-5_2.nix { pkgs = kas52Pkgs; };
 in with pkgs; [
   bashInteractive
   bzip2

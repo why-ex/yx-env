@@ -15,7 +15,7 @@
 */
 # yocto-scarthgap-kas52.nix
 # Profile for the yocto build environment.
-{ pkgs }:
+{ pkgs, kas52Pkgs ? pkgs }:
 
 let
   kasInit = pkgs.writeScriptBin "container-entrypoint"
@@ -29,7 +29,7 @@ in
 {
   name = "yocto-scarthgap-kas52";
 
-  pkgs = import ./pkgs-yocto-scarthgap-kas52.nix { inherit pkgs; }
+  pkgs = import ./pkgs-yocto-scarthgap-kas52.nix { inherit pkgs kas52Pkgs; }
     ++ common-yocto ++ [ kasInit oeGitProxy ];
 
   enableToolchain = true;
