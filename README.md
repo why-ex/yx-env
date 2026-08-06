@@ -24,14 +24,16 @@ both the yx-env version and the profile name.
 
 - Docker
 ```sh
+YXENV_VERSION="$(nix eval --raw .#lib.version)"
 docker load < result
-docker run --rm -ti yx-env:0.1.5-yocto
+docker run --rm -ti "yx-env:${YXENV_VERSION}-yocto"
 ```
 
 - Podman
 ```sh
+YXENV_VERSION="$(nix eval --raw .#lib.version)"
 podman load < result
-podman run --rm -ti yx-env:0.1.5-yocto
+podman run --rm -ti "yx-env:${YXENV_VERSION}-yocto"
 ```
 
 ### Running the Container (example)
@@ -41,6 +43,7 @@ podman run --rm -ti yx-env:0.1.5-yocto
 Useful for Yocto builds where absolute paths matter:
 
 ```sh
+YXENV_VERSION="$(nix eval --raw .#lib.version)"
 docker run --rm -ti \
   -u $(id -u):$(id -g) \
   -v $(pwd):$(pwd):rw \
@@ -49,7 +52,7 @@ docker run --rm -ti \
   -v /etc/group:/etc/group:ro \
   -v /etc/passwd:/etc/passwd:ro \
   --workdir=$(pwd) \
-  yx-env:0.1.5-yocto
+  "yx-env:${YXENV_VERSION}-yocto"
 ```
 Then source your Yocto environment script and run `bitbake`.
 

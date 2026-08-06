@@ -63,11 +63,8 @@ cd yx-env
 nix eval --raw .#lib.version
 ```
 
-Current expected value:
-
-```text
-0.1.5
-```
+The expected value MUST match the version assigned to `yxEnvVer` in
+`flake.nix`; do not duplicate the concrete release number here.
 
 ### YXENV-FLAKE-003: Linux container system
 
@@ -540,8 +537,9 @@ At least one container image SHOULD build and run a basic command:
 ```sh
 cd yx-env
 nix build .#minimal
+YXENV_VERSION="$(nix eval --raw .#lib.version)"
 docker load < result
-docker run --rm yx-env:0.1.5-minimal env
+docker run --rm "yx-env:${YXENV_VERSION}-minimal" env
 ```
 
 The exact image tag MUST match the current environment name logic.

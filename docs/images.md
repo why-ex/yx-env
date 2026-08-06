@@ -12,8 +12,8 @@ ghcr.io/why-ex/yx-env:<profile>
 Examples:
 
 ```text
-ghcr.io/why-ex/yx-env:0.1.5-minimal
-ghcr.io/why-ex/yx-env:0.1.5-yocto-scarthgap-kas52
+ghcr.io/why-ex/yx-env:<version>-minimal
+ghcr.io/why-ex/yx-env:<version>-yocto-scarthgap-kas52
 ghcr.io/why-ex/yx-env:yocto-scarthgap-kas52
 ```
 
@@ -23,9 +23,9 @@ The `<profile>` tag is the latest released image for that profile. Use the
 ## Pull an image
 
 ```sh
-docker pull ghcr.io/why-ex/yx-env:0.1.5-yocto-scarthgap-kas52
+docker pull ghcr.io/why-ex/yx-env:<version>-yocto-scarthgap-kas52
 # or
-podman pull ghcr.io/why-ex/yx-env:0.1.5-yocto-scarthgap-kas52
+podman pull ghcr.io/why-ex/yx-env:<version>-yocto-scarthgap-kas52
 ```
 
 ## Run with a Yocto/kas workspace
@@ -42,7 +42,7 @@ docker run --rm -ti \
   -v /etc/group:/etc/group:ro \
   -v /etc/passwd:/etc/passwd:ro \
   --workdir="$(pwd)" \
-  ghcr.io/why-ex/yx-env:0.1.5-yocto-scarthgap-kas52
+  ghcr.io/why-ex/yx-env:<version>-yocto-scarthgap-kas52
 ```
 
 For kas-container compatible profiles, you may also pass `USER_ID` and
@@ -54,7 +54,7 @@ docker run --rm -ti \
   -e GROUP_ID="$(id -g)" \
   -v "$(pwd):$(pwd):rw" \
   --workdir="$(pwd)" \
-  ghcr.io/why-ex/yx-env:0.1.5-yocto-scarthgap-kas52 kas --version
+  ghcr.io/why-ex/yx-env:<version>-yocto-scarthgap-kas52 kas --version
 ```
 
 ## Local image builds
@@ -64,6 +64,7 @@ name:
 
 ```sh
 ./yxenv image yocto-scarthgap-kas52
+YXENV_VERSION="$(nix eval --raw .#lib.version)"
 docker load < result
-docker run --rm -ti yx-env:0.1.5-yocto-scarthgap-kas52
+docker run --rm -ti "yx-env:${YXENV_VERSION}-yocto-scarthgap-kas52"
 ```
