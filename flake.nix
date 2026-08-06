@@ -43,7 +43,7 @@
     kas52Pkgs = import nixpkgs-kas52 { inherit system config; };
     lib = pkgs.lib;
 
-    yxEnvVer = "0.1.5";
+    yxEnvVer = "0.1.6";
 
     # Create a custom etc/os-release file for the yx environment:
     osRelease = pkgs.writeTextDir "etc/os-release" ''
